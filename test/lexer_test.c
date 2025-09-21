@@ -4,10 +4,11 @@
 #include "minitest.h"
 
 static int token_equal(Token a, Token b) {
-    if (a.type != b.type) return 0;
-    if (a.pos != b.pos) return 0;
-    if (a.literal.len != b.literal.len) return 0;
-    return strncmp(a.literal.start, b.literal.start, a.literal.len) == 0;
+    if (a.type != b.type) return 1;
+    if (a.pos != b.pos) return 2;
+    if (a.literal.len != b.literal.len) return 3;
+    if (strncmp(a.literal.start, b.literal.start, a.literal.len) != 0) return 4;
+    return 0;
 }
 
 typedef struct{
@@ -25,12 +26,14 @@ static inline void test_lexer_case(LexerTestCase tt) {
         mt_total++;
         Token actual = GetNextToken(&lexer);
         Token expected = tt.expected[i];
-        if (!token_equal(actual, expected)) {
+        int match = token_equal(actual, expected);
+        if (match != 0) {
             TEST_ERRORF("lexer_tokens",
-                "input=\"%s\", token[%d] mismatch\n  expected: type=%d, literal=\"%.*s\", pos=%d\n  actual:   type=%d, literal=\"%.*s\", pos=%d",
-                tt.input, i,
-                expected.type, expected.literal.len, expected.literal.start, expected.pos,
-                actual.type, actual.literal.len, actual.literal.start, actual.pos
+                "input=\"%s\", token[%d] mismatch %d\n expected: type=%d, literal(%d)=\"%.*s\","\
+                " pos=%d\n   actual: type=%d, literal(%d)=\"%.*s\", pos=%d",
+                tt.input, i,match,
+                expected.type, expected.literal.len, expected.literal.len, expected.literal.start, expected.pos,
+                actual.type, actual.literal.len,actual.literal.len, actual.literal.start, actual.pos
             );
         }
     }
@@ -94,7 +97,7 @@ static inline void test_lexer_case(LexerTestCase tt) {
                 {TOKEN_IDENT, {"button", 6}, 1},
                 {TOKEN_IDENT, {"onClick", 7}, 8},
                 {TOKEN_EQUAL, {"=", 1}, 15},
-                {TOKEN_EXPR, {"() => alert(\"hi\")", 19}, 16},
+                {TOKEN_EXPR, slice_from("() => alert(\"hi\")"), 16},
                 {TOKEN_CLOSE_TAG, {">", 1}, 35},
                 {TOKEN_TEXT, {"Click me", 8}, 36},
                 {TOKEN_OPEN_TAG, {"<", 1}, 44},
@@ -111,7 +114,7 @@ static inline void test_lexer_case(LexerTestCase tt) {
                 {TOKEN_OPEN_TAG, {"<", 1}, 0},
                 {TOKEN_IDENT, {"p", 1}, 1},
                 {TOKEN_CLOSE_TAG, {">", 1}, 2},
-                {TOKEN_TEXT, {"Hello world, this is JSX!", 26}, 3},
+                {TOKEN_TEXT, slice_from("Hello world, this is JSX!"), 3},
                 {TOKEN_OPEN_TAG, {"<", 1}, 28},
                 {TOKEN_SLASH, {"/", 1}, 29},
                 {TOKEN_IDENT, {"p", 1}, 30},
@@ -141,7 +144,7 @@ static inline void test_lexer_case(LexerTestCase tt) {
                 {TOKEN_OPEN_TAG, {"<", 1}, 0},
                 {TOKEN_IDENT, {"div", 3}, 1},
                 {TOKEN_CLOSE_TAG, {">", 1}, 4},
-                {TOKEN_TEXT, {"\n    Multi-line\n    text content\n", 30}, 5},
+                {TOKEN_TEXT, slice_from("\n    Multi-line\n    text content\n"), 5},
                 {TOKEN_OPEN_TAG, {"<", 1}, 38},
                 {TOKEN_SLASH, {"/", 1}, 39},
                 {TOKEN_IDENT, {"div", 3}, 40},

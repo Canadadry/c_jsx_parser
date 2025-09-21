@@ -10,11 +10,6 @@ static int token_equal(Token a, Token b) {
     return strncmp(a.literal.start, b.literal.start, a.literal.len) == 0;
 }
 
-static void token_print(Token tok) {
-    printf("Token{type=%d, literal=\"%.*s\", pos=%d}\n",
-           tok.type, tok.literal.len, tok.literal.start, tok.pos);
-}
-
 typedef struct{
     const char *input;
     Token expected[20];

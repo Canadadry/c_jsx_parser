@@ -13,16 +13,16 @@ typedef struct {
 } Case;
 
 #ifdef MINITEST_IMPL
-static int mt_total = 0;
-static int mt_failed = 0;
+int mt_total = 0;
+int mt_failed = 0;
 #else
 extern int mt_total;
 extern int mt_failed;
 #endif
 
-inline void _test_errorf(const char *func, const char *name, const char *fmt, ...);
-inline void _test_fatalf(const char *func, const char *name, const char *fmt, ...);
-inline void test_done(void);
+void _test_errorf(const char *func, const char *name, const char *fmt, ...);
+void _test_fatalf(const char *func, const char *name, const char *fmt, ...);
+void test_done(void);
 
 #ifdef MINITEST_IMPL
 
@@ -36,7 +36,7 @@ inline void _test_errorf(const char *func, const char *name, const char *fmt, ..
     mt_failed++;
 }
 
-inline void _test_fatalf(const char *func, const char *name, const char *fmt, ...) {
+void _test_fatalf(const char *func, const char *name, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     fprintf(stderr, "[FATAL] %s/%s: ", func, name);
@@ -46,7 +46,7 @@ inline void _test_fatalf(const char *func, const char *name, const char *fmt, ..
     exit(1);
 }
 
-inline void test_done(void) {
+void test_done(void) {
     printf("\n---\nTotal: %d, Failed: %d\n", mt_total, mt_failed);
 }
 

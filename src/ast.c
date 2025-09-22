@@ -12,44 +12,6 @@ Node node_create(Slice tag) {
     return node;
 }
 
-void node_add_prop(Node* node, Prop* prop) {
-    if (node == NULL || prop == NULL) return;
-
-    prop->next = node->Props;
-    node->Props = prop;
-}
-
-void node_add_child(Node* node, Child* child) {
-    if (node == NULL || child == NULL) return;
-
-    child->next = node->Children;
-    node->Children = child;
-}
-
-Child node_to_child(Node child) {
-    Child new_child;
-    new_child.type = NODE_TYPE;
-    new_child.value.node = child;
-    new_child.next = NULL;
-    return new_child;
-}
-
-Child text_to_child(Slice text) {
-    Child new_child;
-    new_child.type = TEXT_TYPE;
-    new_child.value.text = text;
-    new_child.next = NULL;
-    return new_child;
-}
-
-Child expr_to_child(Slice expr) {
-    Child new_child;
-    new_child.type = EXPR_TYPE;
-    new_child.value.expr = expr;
-    new_child.next = NULL;
-    return new_child;
-}
-
 bool node_equal(Node* a, Node* b) {
     if (a == NULL || b == NULL) return false;
     if (slice_equal(a->Tag, b->Tag) != 0) return false;
@@ -87,49 +49,88 @@ bool node_equal(Node* a, Node* b) {
 }
 
 
-void slice_print(Slice slice) {
-    printf("\"%.*s\"", slice.len, slice.start);
+
+
+
+
+#define MIN(x,y) ((x)<(y)?(x):(y))
+
+static inline int transformer_grow_buf(Printer* p,size_t len){
+    if(p->buf_count+len <p->buf_capacity){
+        return 1;
+    }
+    if(p->realloc_fn == NULL){
+        return 0;
+    }
+    int next_capacity = MIN(2*p->buf_capacity,len);
+    p->buf = p->realloc_fn(p->userdata,p->buf,next_capacity);
+    if(p->buf == NULL){
+        return 0;
+    }
+    p->buf_capacity=next_capacity;
+    return 1;
 }
 
-void print_indent(int indent){
+static void write_slice(Printer* p,Slice str){
+    if(transformer_grow_buf(p,str.len)==0){
+        return;
+    }
+    memcpy(p->buf+p->buf_count, str.start,str.len);
+    p->buf_count+=str.len;
+}
+
+static void write_string(Printer* p,const char* str){
+    write_slice(p,slice_from(str));
+}
+
+static void write_char(Printer* p,char c){
+    if(transformer_grow_buf(p,1)==0){
+        return;
+    }
+    p->buf[p->buf_count]=c;
+    p->buf_count++;
+}
+
+static void write_indent(Printer* p,int indent){
     for (int i=0;i<indent;i++){
-        printf(" ");
+        write_char(p,' ');
     }
 }
 
-void node_print(Node* node,int indent) {
-    print_indent(indent);
-    printf("<");
-    slice_print(node->Tag);
+
+void node_print(Printer* p,Node* node,int indent) {
+    write_indent(p,indent);
+    write_char(p,'<');
+    write_slice(p,node->Tag);
     if (node->Props != NULL) {
         Prop* prop = node->Props;
         while (prop != NULL) {
-            printf(" ");
-            slice_print(prop->key);
-            printf(" = ");
-            slice_print(prop->value);
+            write_string(p," ");
+            write_slice(p,prop->key);
+            write_string(p," = ");
+            write_slice(p,prop->value);
             prop = prop->next;
         }
     }
-    printf(">\n");
+    write_string(p,">\n");
 
 
     if (node->Children != NULL) {
         Child* child = node->Children;
         while (child != NULL) {
             if (child->type == NODE_TYPE) {
-                node_print(&child->value.node,indent+1);
+                node_print(p,&child->value.node,indent+1);
             } else {
-                print_indent(indent+1);
-                slice_print(child->value.expr);
-                printf("\n");
+                write_indent(p,indent+1);
+                write_slice(p,child->value.expr);
+                write_string(p,"\n");
             }
             child = child->next;
         }
     }
 
-    print_indent(indent);
-    printf("</");
-    slice_print(node->Tag);
-    printf(">\n");
+    write_indent(p,indent);
+    write_string(p,"</");
+    write_slice(p,node->Tag);
+    write_string(p,">\n");
 }

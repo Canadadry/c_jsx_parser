@@ -31,13 +31,16 @@ typedef struct Child{
     struct Child* next;
 } Child;
 
-Node node_create(Slice tag);
-void node_add_prop(Node* node, Prop* prop);
-void node_add_child(Node* node, Child* child);
-Child node_to_child(Node child);
-Child expr_to_child(Slice expr);
-Child text_to_child(Slice expr);
 bool node_equal(Node* a, Node* b);
-void node_print(Node* node,int indent);
+
+typedef struct {
+    char* buf;
+    size_t buf_count;
+    size_t buf_capacity;
+    void* (*realloc_fn)(void* userdata,void* ptr, size_t size);
+    void* userdata;
+} Printer;
+
+void node_print(Printer* printer,Node* node,int indent);
 
 #endif

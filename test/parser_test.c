@@ -4,28 +4,35 @@
 #include "../src/parser.h"
 #include "minitest.h"
 
+#define BUF_CAPACITY 512
 
-Parser NewParser(Lexer *lexer) {
-    Parser parser = {
-        .lexer = lexer,
-        .props = NULL,
-        .prop_count = 0,
-        .prop_capacity = 0,
-        .children = NULL,
-        .child_count = 0,
-        .child_capacity = 0,
-        .realloc_fn = NULL,
-        .userdata = NULL
-    };
+Child node_to_child(Node child) {
+    Child new_child;
+    new_child.type = NODE_TYPE;
+    new_child.value.node = child;
+    new_child.next = NULL;
+    return new_child;
+}
 
-    InitParser(&parser);
+Child text_to_child(Slice text) {
+    Child new_child;
+    new_child.type = TEXT_TYPE;
+    new_child.value.text = text;
+    new_child.next = NULL;
+    return new_child;
+}
 
-    return parser;
+Child expr_to_child(Slice expr) {
+    Child new_child;
+    new_child.type = EXPR_TYPE;
+    new_child.value.expr = expr;
+    new_child.next = NULL;
+    return new_child;
 }
 
 typedef struct {
     const char *input;
-    Node expected;
+    Node* (*gen_expected)(Child* children_arena,size_t children_len,Prop* prop_arena,size_t prop_len);
 } ParserTestCase;
 
 #define ARENA_SIZE 10
@@ -33,7 +40,9 @@ typedef struct {
 
 static inline void test_parser_case(ParserTestCase tt) {
     Lexer lexer = NewLexer(slice_from(tt.input));
-    Parser parser = NewParser(&lexer);
+    Parser parser = (Parser){0};
+    parser.lexer =&lexer;
+    InitParser(&parser);
     Child children_arena[ARENA_SIZE] = {0};
     parser.children = children_arena;
     parser.child_capacity = ARENA_SIZE;
@@ -48,11 +57,21 @@ static inline void test_parser_case(ParserTestCase tt) {
     Node* actual = result.value.ok;
 
     if (!node_equal(actual, &tt.expected)) {
+        Printer exptected_printer ={0};
+        char exptected_buf[BUF_CAPACITY] ={0};
+        exptected_printer.buf=exptected_buf;
+        exptected_printer.buf_capacity=BUF_CAPACITY;
+        node_print(&exptected_printer, &tt.expected, 0);
+
+        Printer got_printer ={0};
+        char got_buf[BUF_CAPACITY] ={0};
+        got_printer.buf=got_buf;
+        got_printer.buf_capacity=BUF_CAPACITY;
+        node_print(&got_printer, actual, 0);
+
         TEST_ERRORF("test_parser_case",
             "parsing %s failed:\nexpected node:\n%sexpected node:\n%sexpected node:\n",
-            tt.input,NULL,NULL);
-        // node_print(&tt.expected,0);
-        // node_print(actual,0);
+            tt.input,exptected_buf,got_buf);
     }
 }
 
@@ -65,6 +84,17 @@ void test_parser() {
                 .Props = NULL,
                 .Children = (Child[]) {
                     text_to_child(slice_from("ok"))
+                }
+            }
+        },
+        {
+            .input = "<div><a></a><b></b></div>",
+            .expected = (Node) {
+                .Tag = slice_from("div"),
+                .Props = NULL,
+                .Children = (Child[]) {
+                    node_to_child((Node){.Tag=slice_from("a")}),
+                    node_to_child((Node){.Tag=slice_from("b")}),
                 }
             }
         },

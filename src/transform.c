@@ -25,7 +25,7 @@ static inline int transformer_grow_buf(Transformer* t,size_t len){
     return 1;
 }
 
-void write_slice(Transformer* t,Slice str){
+static void write_slice(Transformer* t,Slice str){
     if(transformer_grow_buf(t,str.len)==0){
         return;
     }
@@ -33,11 +33,11 @@ void write_slice(Transformer* t,Slice str){
     t->buf_count+=str.len;
 }
 
-void write_string(Transformer* t,const char* str){
+static void write_string(Transformer* t,const char* str){
     write_slice(t,slice_from(str));
 }
 
-void write_char(Transformer* t,char c){
+static void write_char(Transformer* t,char c){
     if(transformer_grow_buf(t,1)==0){
         return;
     }
@@ -94,7 +94,7 @@ void genNode(Transformer* t,Node* node){
         }
         c=c->next;
     }
-    write_char(t,'(');
+    write_char(t,')');
 }
 
 void Transform(Transformer* t,Node* node){

@@ -7,7 +7,6 @@
 void test_transform_case(Slice in, Slice exp){
     Lexer lexer = NewLexer(in);
     Parser parser = {0};
-    InitParser(&parser);
     parser.lexer=&lexer;
     Child children_arena[ARENA_SIZE] = {0};
     parser.children = children_arena;
@@ -21,6 +20,7 @@ void test_transform_case(Slice in, Slice exp){
     transformer.buf=buf;
     transformer.buf_capacity=BUF_CAPACITY;
 
+    InitParser(&parser);
     ParseNodeResult result = ParseNode(&parser);
     if (result.type != OK) {
         TEST_ERRORF("test_transform_case","parsing %s failed: %d\n", in.start,result.value.err);

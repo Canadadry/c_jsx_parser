@@ -63,6 +63,8 @@ void test_done(void) {
     fn();                                 \
     if (mt_failed == before_failed) {     \
         printf("[ OK ] %s\n", #fn);       \
+    } else {                              \
+       printf("[ FAILED ] %s\n", #fn);    \
     }                                     \
 } while(0)
 

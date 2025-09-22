@@ -1,6 +1,7 @@
 #include "ast.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 Node node_create(Slice tag) {
     Node node;
@@ -76,4 +77,55 @@ bool node_equal(Node* a, Node* b) {
     if (child_a || child_b) return false;
 
     return true;
+}
+
+
+void slice_print(Slice slice) {
+    printf("\"%.*s\"", slice.len, slice.start);
+}
+void print_indent(int indent){
+    for (int i=0;i<indent;i++){
+        printf(" ");
+    }
+}
+
+void node_print(Node* node,int indent) {
+    print_indent(indent);
+    printf("Node %p: ",node);
+    slice_print(node->Tag);
+    printf("\n");
+
+    if (node->Props != NULL) {
+        print_indent(indent);
+        printf("  Properties:\n");
+        Prop* prop = node->Props;
+        while (prop != NULL) {
+            print_indent(indent);
+            printf("    ");
+            slice_print(prop->key);
+            printf(" = ");
+            slice_print(prop->value);
+            printf("\n");
+            prop = prop->next;
+        }
+    }
+
+    if (node->Children != NULL) {
+        print_indent(indent);
+        printf("  Children:\n");
+        Child* child = node->Children;
+        while (child != NULL) {
+            if (child->type == NODE_TYPE) {
+                print_indent(indent);
+                printf("    Child (Node): ");
+                node_print(&child->value.node,indent+1);
+            } else {
+                print_indent(indent);
+                printf("    Child (Expr): ");
+                slice_print(child->value.expr);
+                printf("\n");
+            }
+            child = child->next;
+        }
+    }
 }

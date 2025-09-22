@@ -1,5 +1,7 @@
 #include "parser.h"
+#include "ast.h"
 #include "lexer.h"
+#include "token.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -9,203 +11,232 @@ void InitParser(Parser *parser) {
     parser->peekTok = GetNextToken(parser->lexer);
 }
 
+static inline int parser_grow_children(Parser* p){
+    if(p->realloc_fn == NULL){
+        return 0;
+    }
+    int next_capacity = (p->child_capacity*2)+1;
+    p->children = p->realloc_fn(p->userdata,p->children,next_capacity);
+    if(p->children == NULL){
+        return 0;
+    }
+    p->child_capacity=next_capacity;
+    return 1;
+}
+
+static inline int parser_grow_prop(Parser* p){
+    if(p->realloc_fn == NULL){
+        return 0;
+    }
+    int next_capacity = (p->prop_capacity*2)+1;
+    p->props = p->realloc_fn(p->userdata,p->props,next_capacity);
+    if(p->props == NULL){
+        return 0;
+    }
+    p->prop_capacity=next_capacity;
+    return 1;
+}
+
+static inline Child* get_next_child(Parser* p){
+    if(p->child_capacity == 0 || p->child_count == p->child_capacity){
+        int ok = parser_grow_children(p);
+        if(ok ==0){
+            return  NULL;
+        }
+    }
+    Child* c = &p->children[p->child_count];
+    p->child_count++;
+    return c;
+}
+
+static inline Prop* get_next_prop(Parser* p){
+    if(p->prop_capacity == 0 || p->prop_count == p->prop_capacity){
+        int ok = parser_grow_prop(p);
+        if(ok ==0){
+            return  NULL;
+        }
+    }
+    Prop* prop = &p->props[p->prop_count];
+    p->prop_count++;
+    return prop;
+}
+
 static void parser_next_token(Parser* p) {
     p->curTok = p->peekTok;
     p->peekTok = GetNextToken(p->lexer);
 }
 
-ParseNodeResult ParseNode(Parser* p, Node* node) {
-    ParseNodeResult result = {0};
 
-    if (p->curTok.type != TOKEN_OPEN_TAG) {
-        result.type = ERR;
-        result.value.err = PARSER_ERR_EXPECTED_TAG;
-        return result;
-    }
-    parser_next_token(p);
+typedef struct {
+    ResultType type;
+    union {
+        Prop* ok;
+        ParseErrorCode err;
+    } value;
+} PropsResults;
 
-    if (p->curTok.type != TOKEN_IDENT) {
-        result.type = ERR;
-        result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
-        return result;
-    }
-    Slice tag = p->curTok.literal;
-    parser_next_token(p);
 
-    // Props
+static inline PropsResults parse_props(Parser* p) {
+    PropsResults result = {0};
+    result.type=OK;
+
     while (p->curTok.type == TOKEN_IDENT) {
-        Slice key = p->curTok.literal;
-        const char* value = NULL;
-
+        Prop* prop = get_next_prop(p);
+        prop->key = p->curTok.literal;
+        prop->value = slice_from("true");
         parser_next_token(p);
+
         if (p->curTok.type == TOKEN_EQUAL) {
             parser_next_token(p);
             if (p->curTok.type == TOKEN_STRING) {
-                value = p->curTok.literal.start;
+                prop->value = p->curTok.literal;
                 parser_next_token(p);
             } else if (p->curTok.type == TOKEN_EXPR) {
-                value = p->curTok.literal.start;
+                prop->value = p->curTok.literal;
                 parser_next_token(p);
             } else {
                 result.type = ERR;
                 result.value.err = PARSER_ERR_EXPECTED_PROP;
                 return result;
             }
-        } else {
-            value = "true";
         }
+        prop->next=result.value.ok;
+        result.value.ok=prop;
+    }
 
-        if (p->prop_count >= p->prop_capacity) {
-            if (p->realloc_fn) {
-                p->props = (Prop*)p->realloc_fn(p->userdata, p->props, sizeof(Prop) * (p->prop_capacity * 2));
-                if (!p->props) {
-                    result.type = ERR;
-                    result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
+    return result;
+}
+
+typedef struct {
+    ResultType type;
+    union {
+        Child* ok;
+        ParseErrorCode err;
+    } value;
+} ChildrenResults;
+
+static void set_error(ChildrenResults* result, ParseErrorCode err){
+    result->type = ERR;
+    result->value.err = PARSER_ERR_EXPECTED_TAG;
+}
+
+
+ParseErrorCode parse_child_node(Parser* p,Child* child) ;
+
+static inline ChildrenResults parse_children(Parser* p) {
+    ChildrenResults result={0};
+    result.type=OK;
+
+    while (p->curTok.type != TOKEN_OPEN_TAG || (p->curTok.type == TOKEN_OPEN_TAG && p->peekTok.type != TOKEN_SLASH)) {
+        Child* child =  get_next_child(p);
+        switch (p->curTok.type) {
+            case TOKEN_TEXT:
+                child->type = TEXT_TYPE;
+                child->value.text= p->curTok.literal;
+                parser_next_token(p);
+                break;
+            case TOKEN_EXPR:
+                child->type = EXPR_TYPE;
+                child->value.text= p->curTok.literal;
+                parser_next_token(p);
+                break;
+            case TOKEN_OPEN_TAG: {
+                ParseErrorCode err = parse_child_node(p,child);
+                if (err != 0) {
+                    set_error(&result,err);
                     return result;
                 }
-                p->prop_capacity *= 2;
-            } else {
-                result.type = ERR;
-                result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
-                return result;
+                break;
             }
+            default:
+                result.type = ERR;
+                result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
+                return result;
         }
-
-        Prop* prop = &p->props[p->prop_count++];
-        prop->key = key;
-        prop->value.start = value;
-        prop->value.len = strlen(value);
+        child->next=result.value.ok;
+        result.value.ok=child;
     }
+    return result;
+}
+
+static inline ParseErrorCode parse_closing_tag(Parser* p,Slice tag){
+    if (p->curTok.type != TOKEN_OPEN_TAG || p->peekTok.type != TOKEN_SLASH) {
+        return PARSER_ERR_UNEXPECTED_TOKEN;
+    }
+    parser_next_token(p);
+    parser_next_token(p);
+
+    if (p->curTok.type != TOKEN_IDENT || slice_equal(p->curTok.literal, tag) != 0) {
+         return PARSER_ERR_UNEXPECTED_TOKEN;
+    }
+    parser_next_token(p);
+    if (p->curTok.type != TOKEN_CLOSE_TAG) {
+        return PARSER_ERR_UNEXPECTED_TOKEN;
+    }
+    parser_next_token(p);
+    return 0;
+}
+
+ParseErrorCode parse_child_node(Parser* p,Child* child) {
+    ChildrenResults result = {0};
+    child->type = NODE_TYPE;
+    Node* node= &child->value.node;
+
+    if (node == NULL){
+        return PARSER_ERR_MEMORY_ALLOCATION;
+    }
+
+    if (p->curTok.type != TOKEN_OPEN_TAG) {
+         return PARSER_ERR_EXPECTED_TAG;
+    }
+    parser_next_token(p);
+
+    if (p->curTok.type != TOKEN_IDENT) {
+        return PARSER_ERR_UNEXPECTED_TOKEN;
+    }
+    node->Tag = p->curTok.literal;
+    parser_next_token(p);
+
+    PropsResults props_result = parse_props(p);
+    if (props_result.type == ERR){
+        return props_result.value.err;
+    }
+    node->Props = props_result.value.ok;
 
     if (p->curTok.type == TOKEN_SLASH && p->peekTok.type == TOKEN_CLOSE_TAG) {
         parser_next_token(p);
         parser_next_token(p);
-        node->Tag = tag;
-        node->Props = p->props;
-        node->Children = NULL;
-        result.type = OK;
-        result.value.ok = node;
-        return result;
+        return 0;
     }
 
     if (p->curTok.type != TOKEN_CLOSE_TAG) {
-        result.type = ERR;
-        result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
-        return result;
+        return PARSER_ERR_UNEXPECTED_TOKEN;
     }
     parser_next_token(p);
 
-    size_t child_capacity = 4;
-    size_t child_count = 0;
-    Child* children = (Child*)malloc(sizeof(Child) * child_capacity);
-    if (!children) {
-        result.type = ERR;
-        result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
-        return result;
+    ChildrenResults children_result = parse_children(p);
+    if (children_result.type == ERR){
+        return children_result.value.err;
+    }
+    node->Children = children_result.value.ok;
+
+    ParseErrorCode err = parse_closing_tag(p,node->Tag);
+    if (err != 0){
+        return err;
     }
 
-    while (p->curTok.type != TOKEN_OPEN_TAG || (p->curTok.type == TOKEN_OPEN_TAG && p->peekTok.type != TOKEN_SLASH)) {
-        switch (p->curTok.type) {
-            case TOKEN_TEXT:
-                if (child_count >= child_capacity) {
-                    child_capacity *= 2;
-                    children = (Child*)realloc(children, sizeof(Child) * child_capacity);
-                    if (!children) {
-                        result.type = ERR;
-                        result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
-                        return result;
-                    }
-                }
-                children[child_count].type = EXPR_TYPE;
-                children[child_count].value.expr = p->curTok.literal;
-                children[child_count].next = NULL;
-                child_count++;
-                parser_next_token(p);
-                break;
-            case TOKEN_EXPR:
-                if (child_count >= child_capacity) {
-                    child_capacity *= 2;
-                    children = (Child*)realloc(children, sizeof(Child) * child_capacity);
-                    if (!children) {
-                        result.type = ERR;
-                        result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
-                        return result;
-                    }
-                }
-                children[child_count].type = EXPR_TYPE;
-                children[child_count].value.expr = p->curTok.literal;
-                children[child_count].next = NULL;
-                child_count++;
-                parser_next_token(p);
-                break;
-            case TOKEN_OPEN_TAG: {
-                Node* child_node = (Node*)malloc(sizeof(Node));
-                if (!child_node) {
-                    result.type = ERR;
-                    result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
-                    return result;
-                }
+    return 0;
+}
 
-                ParseNodeResult child_result = ParseNode(p, child_node);
-                if (child_result.type != OK) {
-                    free(child_node);
-                    free(children);
-                    return child_result;
-                }
-
-                if (child_count >= child_capacity) {
-                    child_capacity *= 2;
-                    children = (Child*)realloc(children, sizeof(Child) * child_capacity);
-                    if (!children) {
-                        result.type = ERR;
-                        result.value.err = PARSER_ERR_MEMORY_ALLOCATION;
-                        return result;
-                    }
-                }
-
-                children[child_count].type = NODE_TYPE;
-                children[child_count].value.node = *child_node;
-                children[child_count].next = NULL;
-                child_count++;
-                break;
-            }
-            case TOKEN_EOF:
-                free(children);
-                result.type = ERR;
-                result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
-                return result;
-            default:
-                free(children);
-                result.type = ERR;
-                result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
-                return result;
-        }
+ParseNodeResult ParseNode(Parser* p) {
+    Child* child =  get_next_child(p);
+    ParseNodeResult result = {0};
+    result.type=OK;
+    result.value.ok=&child->value.node;
+    ParseErrorCode err = parse_child_node(p,child);
+    if (err!=0){
+        result.type=ERR;
+        result.value.err=err;
     }
-
-    if (p->curTok.type == TOKEN_OPEN_TAG && p->peekTok.type == TOKEN_SLASH) {
-        parser_next_token(p);
-        parser_next_token(p);
-        if (p->curTok.type != TOKEN_IDENT || strncmp(p->curTok.literal.start, tag.start, tag.len) != 0) {
-            free(children);
-            result.type = ERR;
-            result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
-            return result;
-        }
-        parser_next_token(p);
-        if (p->curTok.type != TOKEN_CLOSE_TAG) {
-            free(children);
-            result.type = ERR;
-            result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
-            return result;
-        }
-        parser_next_token(p);
-    }
-
-    node->Tag = tag;
-    node->Props = p->props;
-    node->Children = children;
-
-    result.type = OK;
-    result.value.ok = node;
     return result;
 }

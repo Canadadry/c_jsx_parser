@@ -27,11 +27,10 @@ typedef enum {
 } ParseErrorCode;
 
 
+typedef enum{OK,ERR} ResultType;
+
 typedef struct {
-    enum {
-        OK,
-        ERR
-    } type;
+    ResultType type;
     union {
         Node* ok;
         ParseErrorCode err;
@@ -39,6 +38,6 @@ typedef struct {
 } ParseNodeResult;
 
 void InitParser(Parser *parser);
-ParseNodeResult ParseNode(Parser* p, Node* node);
+ParseNodeResult ParseNode(Parser* p);
 
 #endif

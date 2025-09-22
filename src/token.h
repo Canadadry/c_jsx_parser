@@ -20,6 +20,7 @@ typedef struct{
 } Slice;
 
 Slice slice_from(const char* str);
+int slice_equal(Slice left, Slice right);
 
 typedef struct {
     TokenType type;

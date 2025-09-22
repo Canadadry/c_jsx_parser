@@ -1,8 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../src/parser.h"
 #include "minitest.h"
 
+void* test_realloc(void* userdata,void* ptr, unsigned long size){
+    return realloc(ptr,size);
+}
 
 Parser NewParser(Lexer *lexer) {
     Parser parser = {
@@ -13,7 +17,7 @@ Parser NewParser(Lexer *lexer) {
         .children = NULL,
         .child_count = 0,
         .child_capacity = 0,
-        .realloc_fn = NULL,
+        .realloc_fn = test_realloc,
         .userdata = NULL
     };
 
@@ -22,15 +26,11 @@ Parser NewParser(Lexer *lexer) {
     return parser;
 }
 
-#include <stdio.h>
-#include <string.h>
-#include "../src/parser.h"
-#include "minitest.h"
-
 typedef struct {
     const char *input;
     Node expected;
 } ParserTestCase;
+
 
 static inline void test_parser_case(ParserTestCase tt) {
     Lexer lexer = NewLexer(slice_from(tt.input));
@@ -38,13 +38,32 @@ static inline void test_parser_case(ParserTestCase tt) {
 
     Node actual;
     ParseNodeResult result = ParseNode(&parser, &actual);
+
     if (result.type != OK) {
+        printf("[DEBUG] Parsing Error: %d\n", result.value.err);
         TEST_ERRORF("parser", "input=\"%s\": unexpected parsing error: %d\n", tt.input, result.value.err);
         return;
     }
 
+    printf("[DEBUG] Expected Node:\n");
+    node_print(&tt.expected,0);
+    printf("[DEBUG] Actual Node:\n");
+    node_print(&actual,0);
+
     if (!node_equal(&actual, &tt.expected)) {
-        TEST_ERRORF("parser", "input=\"%s\" mismatch\n expected: %#v\n actual: %#v\n", tt.input, &tt.expected, &actual);
+        printf("[DEBUG] Mismatch detected!\n");
+        printf("[DEBUG] Expected Node Details:\n");
+        node_print(&tt.expected,0);
+        printf("[DEBUG] Actual Node Details:\n");
+        node_print(&actual,0);
+
+        TEST_ERRORF("parser", "input=\"%s\" mismatch\n expected: \n", tt.input);
+        node_print(&tt.expected,0);
+        printf("\n actual: \n");
+        node_print(&actual,0);
+        printf("\n");
+    } else {
+        printf("[DEBUG] Parsing successful for input: \"%s\"\n", tt.input);
     }
 }
 

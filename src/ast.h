@@ -20,11 +20,13 @@ typedef struct Node {
 typedef struct Child{
     enum {
         NODE_TYPE,
-        EXPR_TYPE
+        EXPR_TYPE,
+        TEXT_TYPE
     } type;
     union {
         Node node;
         Slice expr;
+        Slice text;
     } value;
     struct Child* next;
 } Child;
@@ -35,5 +37,6 @@ void node_add_child(Node* node, Child* child);
 Child node_to_child(Node child);
 Child expr_to_child(Slice expr);
 bool node_equal(Node* a, Node* b);
+void node_print(Node* node,int indent);
 
 #endif

@@ -6,8 +6,7 @@
 static int token_equal(Token a, Token b) {
     if (a.type != b.type) return 1;
     if (a.pos != b.pos) return 2;
-    if (a.literal.len != b.literal.len) return 3;
-    if (strncmp(a.literal.start, b.literal.start, a.literal.len) != 0) return 4;
+    if (slice_equal(a.literal, a.literal)!=0) return 3;
     return 0;
 }
 

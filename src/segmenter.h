@@ -10,7 +10,7 @@ typedef  struct {
 
 typedef  struct {
 	Slice content;
-	enum{JS,JSX,EOF} type;
+	enum{JS,JSX,END} type;
 }Segment;
 
 Segment get_next_segment(Segmenter* t);

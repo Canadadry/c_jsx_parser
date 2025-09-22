@@ -44,7 +44,6 @@ Segment read_JSX(Segmenter* t) {
                 return (Segment) { .content = content, .type = JSX };
             }
         }
-
         t->pos++;
     }
 
@@ -53,12 +52,10 @@ Segment read_JSX(Segmenter* t) {
     return (Segment) { .content = content, .type = JSX };
 }
 
-
-
 Segment get_next_segment(Segmenter* t) {
     int start = t->pos;
     if (start >= t->src.len) {
-        return (Segment){ .type = EOF };
+        return (Segment){ .type = END };
     }
 
     while (t->pos < t->src.len) {
@@ -81,5 +78,5 @@ Segment get_next_segment(Segmenter* t) {
         return (Segment) { .content = content, .type = JS };
     }
 
-    return (Segment){ .type = EOF };
+    return (Segment){ .type = END };
 }

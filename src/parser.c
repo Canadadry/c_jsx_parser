@@ -178,7 +178,6 @@ static inline ParseErrorCode parse_closing_tag(Parser* p,Slice tag){
 }
 
 ParseErrorCode parse_child_node(Parser* p,Child* child) {
-    ChildrenResults result = {0};
     child->type = NODE_TYPE;
     Node* node= &child->value.node;
 

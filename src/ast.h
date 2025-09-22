@@ -36,6 +36,7 @@ void node_add_prop(Node* node, Prop* prop);
 void node_add_child(Node* node, Child* child);
 Child node_to_child(Node child);
 Child expr_to_child(Slice expr);
+Child text_to_child(Slice expr);
 bool node_equal(Node* a, Node* b);
 void node_print(Node* node,int indent);
 

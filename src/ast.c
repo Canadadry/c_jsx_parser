@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "token.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,6 +34,14 @@ Child node_to_child(Node child) {
     return new_child;
 }
 
+Child text_to_child(Slice text) {
+    Child new_child;
+    new_child.type = TEXT_TYPE;
+    new_child.value.text = text;
+    new_child.next = NULL;
+    return new_child;
+}
+
 Child expr_to_child(Slice expr) {
     Child new_child;
     new_child.type = EXPR_TYPE;
@@ -43,20 +52,18 @@ Child expr_to_child(Slice expr) {
 
 bool node_equal(Node* a, Node* b) {
     if (a == NULL || b == NULL) return false;
-
-    if (memcmp(&a->Tag, &b->Tag, sizeof(Slice)) != 0) return false;
+    if (slice_equal(a->Tag, b->Tag) != 0) return false;
 
     Prop* prop_a = a->Props;
     Prop* prop_b = b->Props;
     while (prop_a && prop_b) {
-        if (memcmp(&prop_a->key, &prop_b->key, sizeof(Slice)) != 0 ||
-            memcmp(&prop_a->value, &prop_b->value, sizeof(Slice)) != 0) {
+        if (slice_equal(prop_a->key, prop_b->key ) != 0 ||
+            slice_equal(prop_a->value, prop_b->value) != 0) {
             return false;
         }
         prop_a = prop_a->next;
         prop_b = prop_b->next;
     }
-
     if (prop_a || prop_b) return false;
 
     Child* child_a = a->Children;
@@ -67,7 +74,7 @@ bool node_equal(Node* a, Node* b) {
         if (child_a->type == NODE_TYPE) {
             if (!node_equal(&child_a->value.node, &child_b->value.node)) return false;
         } else {
-            if (memcmp(&child_a->value.expr, &child_b->value.expr, sizeof(Slice)) != 0) return false;
+            if (slice_equal(child_a->value.expr, child_b->value.expr) != 0) return false;
         }
 
         child_a = child_a->next;
@@ -83,6 +90,7 @@ bool node_equal(Node* a, Node* b) {
 void slice_print(Slice slice) {
     printf("\"%.*s\"", slice.len, slice.start);
 }
+
 void print_indent(int indent){
     for (int i=0;i<indent;i++){
         printf(" ");
@@ -91,41 +99,37 @@ void print_indent(int indent){
 
 void node_print(Node* node,int indent) {
     print_indent(indent);
-    printf("Node %p: ",node);
+    printf("<");
     slice_print(node->Tag);
-    printf("\n");
-
     if (node->Props != NULL) {
-        print_indent(indent);
-        printf("  Properties:\n");
         Prop* prop = node->Props;
         while (prop != NULL) {
-            print_indent(indent);
-            printf("    ");
+            printf(" ");
             slice_print(prop->key);
             printf(" = ");
             slice_print(prop->value);
-            printf("\n");
             prop = prop->next;
         }
     }
+    printf(">\n");
+
 
     if (node->Children != NULL) {
-        print_indent(indent);
-        printf("  Children:\n");
         Child* child = node->Children;
         while (child != NULL) {
             if (child->type == NODE_TYPE) {
-                print_indent(indent);
-                printf("    Child (Node): ");
                 node_print(&child->value.node,indent+1);
             } else {
-                print_indent(indent);
-                printf("    Child (Expr): ");
+                print_indent(indent+1);
                 slice_print(child->value.expr);
                 printf("\n");
             }
             child = child->next;
         }
     }
+
+    print_indent(indent);
+    printf("</");
+    slice_print(node->Tag);
+    printf(">\n");
 }

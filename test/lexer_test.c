@@ -22,12 +22,11 @@ static inline void test_lexer_case(LexerTestCase tt) {
     Lexer lexer = NewLexer(src);
 
     for (int i = 0; i < tt.expected_len; i++) {
-        mt_total++;
         Token actual = GetNextToken(&lexer);
         Token expected = tt.expected[i];
         int match = token_equal(actual, expected);
         if (match != 0) {
-            TEST_ERRORF("lexer_tokens",
+            TEST_ERRORF("test_lexer_case",
                 "input=\"%s\", token[%d] mismatch %d\n expected: type=%d, literal(%d)=\"%.*s\","\
                 " pos=%d\n   actual: type=%d, literal(%d)=\"%.*s\", pos=%d",
                 tt.input, i,match,
@@ -155,6 +154,7 @@ static inline void test_lexer_case(LexerTestCase tt) {
     };
 
     for (int t = 0; t < sizeof(tests)/sizeof(tests[0]); t++) {
+        mt_total++;
         test_lexer_case(tests[t]);
     }
 }

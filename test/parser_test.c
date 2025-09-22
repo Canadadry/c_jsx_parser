@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../src/parser.h"
+#include "minitest.h"
 
 
 Parser NewParser(Lexer *lexer) {
@@ -42,17 +43,16 @@ static inline void test_parser_case(ParserTestCase tt) {
 
     ParseNodeResult result = ParseNode(&parser);
     if (result.type != OK) {
-        printf("parsing %s failed: %d\n", tt.input,result.value.err);
-        return;
+        TEST_ERRORF("parsing %s failed: %d\n", tt.input,result.value.err);
     }
     Node* actual = result.value.ok;
 
     if (!node_equal(actual, &tt.expected)) {
-        printf("parsing %s failed:\n", tt.input);
-        printf("expected node:\n");
-        node_print(&tt.expected,0);
-        printf("actual node:\n");
-        node_print(actual,0);
+        TEST_ERRORF("test_parser_case",
+            "parsing %s failed:\nexpected node:\n%sexpected node:\n%sexpected node:\n",
+            tt.input,NULL,NULL);
+        // node_print(&tt.expected,0);
+        // node_print(actual,0);
     }
 }
 
@@ -150,6 +150,7 @@ void test_parser() {
 
     int test_count = sizeof(tests) / sizeof(tests[0]);
     for (int i = 0; i < test_count; i++) {
+        mt_total++;
         test_parser_case(tests[i]);
     }
 }

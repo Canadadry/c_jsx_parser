@@ -1,5 +1,5 @@
 #include "../src/transform.h"
-#include <stdio.h>
+#include "minitest.h"
 
 #define ARENA_SIZE 10
 #define BUF_CAPACITY 512
@@ -17,19 +17,19 @@ void test_transform_case(Slice in, Slice exp){
     parser.prop_capacity = ARENA_SIZE;
     Transformer transformer = {0};
     char buf[BUF_CAPACITY] ={0};
+    transformer.createElem=slice_from("React.createElement(");
     transformer.buf=buf;
     transformer.buf_capacity=BUF_CAPACITY;
 
     ParseNodeResult result = ParseNode(&parser);
     if (result.type != OK) {
-        printf("parsing %s failed: %d\n", in.start,result.value.err);
-        return;
+        TEST_ERRORF("test_transform_case","parsing %s failed: %d\n", in.start,result.value.err);
     }
     Node* actual = result.value.ok;
 
     Transform(&transformer,actual);
     if (slice_equal((Slice){.start=buf,.len=transformer.buf_count}, exp) != 0) {
-        printf("Test failed for input: %s\nExpected: %s\nGot: %s\n", in.start, exp.start, buf);
+        TEST_ERRORF("test_transform_case","Test failed for input: %s\nExpected: %s\nGot: %s\n", in.start, exp.start, buf);
     }
 }
 
@@ -82,6 +82,7 @@ void test_transform() {
 
     int test_count = sizeof(cases) / sizeof(cases[0]);
     for (int i = 0; i < test_count; i++) {
+        mt_total++;
         test_transform_case(slice_from(cases[i].in),slice_from(cases[i].exp));
     }
 }

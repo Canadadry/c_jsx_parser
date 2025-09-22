@@ -5,6 +5,7 @@
 #include "parser.h"
 
 typedef struct {
+    Slice createElem;
     char* buf;
     size_t buf_count;
     size_t buf_capacity;
@@ -12,6 +13,6 @@ typedef struct {
     void* userdata;
 } Transformer;
 
-void Transform(Transformer* t,Node* in);
+void Transform(Transformer* t,Node* node);
 
 #endif

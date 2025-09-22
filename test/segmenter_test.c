@@ -74,7 +74,206 @@ void test_segment() {
                     .type=EOF,
                 },
             },
-        }
+        },
+
+        {
+            .name="simple div",
+            .in="const el = (<div>ok</div>);",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("const el = ("),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<div>ok</div>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(");"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        {
+            .name="button with boolean prop",
+            .in="export const Component = () => (<button disabled>press</button>);",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("export const Component = () => ("),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<button disabled>press</button>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(");"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        {
+            .name="span with expression",
+            .in="function handleClick() {}\n"
+                "export function X() {\n"
+                "    return <span onClick={handleClick}>X</span>\n"
+                "}",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("function handleClick() {}\n"
+                            "export function X() {\n"
+                            "    return "),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<span onClick={handleClick}>X</span>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("\n}"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        {
+            .name="inline closure",
+            .in="export default function Foo() {\n"
+                "    return (<button onClick={() => alert(\"hi\")}>Click me</button>);\n"
+                "}",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("export default function Foo() {\n"
+                            "    return ("),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<button onClick={() => alert(\"hi\")}>Click me</button>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(");\n}"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        {
+            .name="multi-line text",
+            .in="export function M() {\n"
+                "    return (\n"
+                "        <div>\n"
+                "            Multi-line\n"
+                "            text content\n"
+                "        </div>\n"
+                "    )\n"
+                "}",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("export function M() {\n"
+                            "    return (\n"
+                            "        "),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<div>\n"
+                            "            Multi-line\n"
+                            "            text content\n"
+                            "        </div>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("\n    )\n}"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        // Cas supplémentaires
+
+        {
+            .name="empty JSX",
+            .in="const el = (<></>);",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("const el = ("),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<></>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(");"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        {
+            .name="JSX with nested elements",
+            .in="const el = (<div><span>Nested</span></div>);",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("const el = ("),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<div><span>Nested</span></div>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(");"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
+        {
+            .name="JSX with comments",
+            .in="const el = (<div><!-- Comment --><span>ok</span></div>);",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from("const el = ("),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from("<div><!-- Comment --><span>ok</span></div>"),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(");"),
+                },
+                (Segment){
+                    .type=EOF,
+                },
+            },
+        },
+
     };
 
     int test_count = sizeof(cases) / sizeof(cases[0]);

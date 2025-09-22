@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../src/parser.h"
-#include "minitest.h"
 
 
 Parser NewParser(Lexer *lexer) {

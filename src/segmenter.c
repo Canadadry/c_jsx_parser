@@ -1,6 +1,7 @@
 #include "segmenter.h"
 
-Segment read_JSX(Segmenter* t, int start) {
+Segment read_JSX(Segmenter* t) {
+    int start = t->pos;
     int depth = 0;
     int inExpr = 0;
     char inString = 0;
@@ -66,11 +67,10 @@ Segment get_next_segment(Segmenter* t) {
         if (ch == '<') {
             if (t->pos > start) {
                 Slice content = { t->src.start + start, t->pos - start };
-                t->pos = t->pos;
                 return (Segment) { .content = content, .type = JS };
             }
 
-            return read_JSX(t, start);
+            return read_JSX(t);
         }
         t->pos++;
     }

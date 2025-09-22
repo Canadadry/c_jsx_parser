@@ -123,6 +123,21 @@ static void set_error(ChildrenResults* result, ParseErrorCode err){
 
 ParseErrorCode parse_child_node(Parser* p,Child* child) ;
 
+Child* reverse_children(Child* head) {
+    Child* prev = NULL;
+    Child* current = head;
+    Child* next = NULL;
+
+    while (current != NULL) {
+        next = current->next;
+        current->next = prev;
+        prev = current;
+        current = next;
+    }
+
+    return prev;
+}
+
 static inline ChildrenResults parse_children(Parser* p) {
     ChildrenResults result={0};
     result.type=OK;
@@ -156,6 +171,7 @@ static inline ChildrenResults parse_children(Parser* p) {
         child->next=result.value.ok;
         result.value.ok=child;
     }
+    result.value.ok=reverse_children(result.value.ok);
     return result;
 }
 

@@ -1,5 +1,5 @@
-#ifndef JSX_TRANSFORM_H
-#define JSX_TRANSFORM_H
+#ifndef JSX_SEGMENTER_H
+#define JSX_SEGMENTER_H
 
 #include "token.h"
 

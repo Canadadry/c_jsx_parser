@@ -6,30 +6,6 @@
 
 #define BUF_CAPACITY 512
 
-Child node_to_child(Node child) {
-    Child new_child;
-    new_child.type = NODE_TYPE;
-    new_child.value.node = child;
-    new_child.next = NULL;
-    return new_child;
-}
-
-Child text_to_child(Slice text) {
-    Child new_child;
-    new_child.type = TEXT_TYPE;
-    new_child.value.text = text;
-    new_child.next = NULL;
-    return new_child;
-}
-
-Child expr_to_child(Slice expr) {
-    Child new_child;
-    new_child.type = EXPR_TYPE;
-    new_child.value.expr = expr;
-    new_child.next = NULL;
-    return new_child;
-}
-
 typedef struct {
     const char *input;
     Node* (*gen_expected)(Child* children_arena,size_t children_len,Prop* prop_arena,size_t prop_len);
@@ -46,7 +22,7 @@ static inline void test_parser_case(ParserTestCase tt) {
     Child children_arena[ARENA_SIZE] = {0};
     parser.children = children_arena;
     parser.child_capacity = ARENA_SIZE;
-    Prop     props_arena[ARENA_SIZE] = {0};
+    Prop props_arena[ARENA_SIZE] = {0};
     parser.props = props_arena;
     parser.prop_capacity = ARENA_SIZE;
 
@@ -56,12 +32,19 @@ static inline void test_parser_case(ParserTestCase tt) {
     }
     Node* actual = result.value.ok;
 
-    if (!node_equal(actual, &tt.expected)) {
+    Child expected_child[ARENA_SIZE]={0};
+    Prop expected_props[ARENA_SIZE]={0};
+    Node* expected = tt.gen_expected(expected_child,ARENA_SIZE,expected_props,ARENA_SIZE);
+    if(expected==NULL){
+        TEST_ERRORF("test_parser_case", "cannot generate expected node\n");
+    }
+
+    if (!node_equal(actual, expected)) {
         Printer exptected_printer ={0};
         char exptected_buf[BUF_CAPACITY] ={0};
         exptected_printer.buf=exptected_buf;
         exptected_printer.buf_capacity=BUF_CAPACITY;
-        node_print(&exptected_printer, &tt.expected, 0);
+        node_print(&exptected_printer, expected, 0);
 
         Printer got_printer ={0};
         char got_buf[BUF_CAPACITY] ={0};

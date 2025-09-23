@@ -1,7 +1,6 @@
 #include "jsx_test.h"
 #include "../src/jsx.h"
 #include "minitest.h"
-#include <stdio.h>
 #include <string.h>
 
 #define BUF_CAPACITY 2048

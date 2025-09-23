@@ -81,15 +81,15 @@ void genNode(Transformer* t,Node* node){
     while(c!=NULL){
         write_string(t, ", ");
         switch(c->type){
-            case TEXT_TYPE:
+            case TEXT_NODE_TYPE:
                 write_char(t, '"');
                 write_slice(t,c->value.text);
                 write_char(t, '"');
                 break;
-            case EXPR_TYPE:
+            case EXPR_NODE_TYPE:
                 write_slice(t,c->value.expr);
                 break;
-            case NODE_TYPE:
+            case NODE_NODE_TYPE:
                 genNode(t,&c->value.node);
         }
         c=c->next;

@@ -90,9 +90,11 @@ static inline PropsResults parse_props(Parser* p) {
             parser_next_token(p);
             if (p->curTok.type == TOKEN_STRING) {
                 prop->value = p->curTok.literal;
+                prop->type = TEXT_PROP_TYPE;
                 parser_next_token(p);
             } else if (p->curTok.type == TOKEN_EXPR) {
                 prop->value = p->curTok.literal;
+                prop->type = EXPR_PROP_TYPE;
                 parser_next_token(p);
             } else {
                 result.type = ERR;
@@ -146,12 +148,12 @@ static inline ChildrenResults parse_children(Parser* p) {
         Child* child =  get_next_child(p);
         switch (p->curTok.type) {
             case TOKEN_TEXT:
-                child->type = TEXT_TYPE;
+                child->type = TEXT_NODE_TYPE;
                 child->value.text= p->curTok.literal;
                 parser_next_token(p);
                 break;
             case TOKEN_EXPR:
-                child->type = EXPR_TYPE;
+                child->type = EXPR_NODE_TYPE;
                 child->value.text= p->curTok.literal;
                 parser_next_token(p);
                 break;
@@ -194,7 +196,7 @@ static inline ParseErrorCode parse_closing_tag(Parser* p,Slice tag){
 }
 
 ParseErrorCode parse_child_node(Parser* p,Child* child) {
-    child->type = NODE_TYPE;
+    child->type = NODE_NODE_TYPE;
     Node* node= &child->value.node;
 
     if (node == NULL){

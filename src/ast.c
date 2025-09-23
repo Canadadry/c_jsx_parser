@@ -23,6 +23,9 @@ bool node_equal(Node* a, Node* b) {
             slice_equal(prop_a->value, prop_b->value) != 0) {
             return false;
         }
+        if (prop_a->type != prop_b->type){
+            return false;
+        }
         prop_a = prop_a->next;
         prop_b = prop_b->next;
     }
@@ -33,7 +36,7 @@ bool node_equal(Node* a, Node* b) {
     while (child_a && child_b) {
         if (child_a->type != child_b->type) return false;
 
-        if (child_a->type == NODE_TYPE) {
+        if (child_a->type == NODE_NODE_TYPE) {
             if (!node_equal(&child_a->value.node, &child_b->value.node)) return false;
         } else {
             if (slice_equal(child_a->value.expr, child_b->value.expr) != 0) return false;
@@ -47,11 +50,6 @@ bool node_equal(Node* a, Node* b) {
 
     return true;
 }
-
-
-
-
-
 
 #define MIN(x,y) ((x)<(y)?(x):(y))
 
@@ -97,7 +95,6 @@ static void write_indent(Printer* p,int indent){
     }
 }
 
-
 void node_print(Printer* p,Node* node,int indent) {
     write_indent(p,indent);
     write_char(p,'<');
@@ -108,7 +105,13 @@ void node_print(Printer* p,Node* node,int indent) {
             write_string(p," ");
             write_slice(p,prop->key);
             write_string(p," = ");
-            write_slice(p,prop->value);
+            if(prop->type==EXPR_PROP_TYPE){
+                write_slice(p,prop->value);
+            }else{
+                write_char(p,'"');
+                write_slice(p,prop->value);
+                write_char(p,'"');
+            }
             prop = prop->next;
         }
     }
@@ -118,7 +121,7 @@ void node_print(Printer* p,Node* node,int indent) {
     if (node->Children != NULL) {
         Child* child = node->Children;
         while (child != NULL) {
-            if (child->type == NODE_TYPE) {
+            if (child->type == NODE_NODE_TYPE) {
                 node_print(p,&child->value.node,indent+1);
             } else {
                 write_indent(p,indent+1);

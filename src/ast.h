@@ -8,6 +8,10 @@
 typedef struct Prop {
     Slice key;
     Slice value;
+    enum {
+        EXPR_PROP_TYPE,
+        TEXT_PROP_TYPE
+    } type;
     struct Prop* next;
 } Prop;
 
@@ -19,9 +23,9 @@ typedef struct Node {
 
 typedef struct Child{
     enum {
-        NODE_TYPE,
-        EXPR_TYPE,
-        TEXT_TYPE
+        NODE_NODE_TYPE,
+        EXPR_NODE_TYPE,
+        TEXT_NODE_TYPE
     } type;
     union {
         Node node;

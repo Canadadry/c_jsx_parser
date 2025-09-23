@@ -26,7 +26,10 @@ void test_segment_case(SegmentCase tt) {
         }
 
         if (slice_equal(got.content, tt.exp[i].content) != 0) {
-            TEST_ERRORF(tt.name, "expected content at segment %d: %s, got: %s", i, tt.exp[i].content.start, got.content.start);
+            TEST_ERRORF(tt.name, "expected content at segment %d: \n-%.*s-\n, got: \n-%.*s-\n", i,
+                tt.exp[i].content.len ,  tt.exp[i].content.start,
+                got.content.len ,  got.content.start
+            );
             return;
         }
     }
@@ -41,8 +44,8 @@ void test_segment() {
                 "export function Component() {\n"
                 "    let myRef = null\n"
                 "    let name = \"Fernando\"\n"
-                "        let myClass = \"open\"\n"
-                "        return (\n"
+                "    let myClass = \"open\"\n"
+                "    return (\n"
                 "        <div className={myClass} ref={myRef}>\n"
                 "        <h1>Hello {name}!</h1>\n"
                 "    </div>\n"
@@ -55,19 +58,20 @@ void test_segment() {
                             "\n"
                             "export function Component() {\n"
                             "    let myRef = null\n"
-                            "        let name = \"Fernando\"\n"
-                            "            let myClass = \"open\"\n"
-                            "        return ("),
+                            "    let name = \"Fernando\"\n"
+                            "    let myClass = \"open\"\n"
+                            "    return (\n"
+                            "        "),
                 },
                 (Segment){
                     .type=JSX,
                     .content=slice_from("<div className={myClass} ref={myRef}>\n"
-                            "                <h1>Hello {name}!</h1>\n"
-                            "            </div>"),
+                            "        <h1>Hello {name}!</h1>\n"
+                            "    </div>"),
                 },
                 (Segment){
                     .type=JS,
-                    .content=slice_from(")\n}"),
+                    .content=slice_from("\n    )\n}"),
                 },
                 (Segment){
                     .type=END,

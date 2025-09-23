@@ -108,6 +108,7 @@ Node* gen_button_disabled(Child* children_arena, size_t children_len, Prop* prop
     prop_arena[0] = (Prop) {
         .key = slice_from("disabled"),
         .value = slice_from("true"),
+        .type = EXPR_PROP_TYPE,
     };
 
     return &children_arena[0].value.node;
@@ -123,7 +124,8 @@ Node* gen_button_class(Child* children_arena, size_t children_len, Prop* prop_ar
     };
     prop_arena[0] = (Prop) {
         .key = slice_from("class"),
-        .value = slice_from("\"btn\""),
+        .value = slice_from("btn"),
+        .type = TEXT_PROP_TYPE,
         .next = NULL
     };
     children_arena[1].type = TEXT_NODE_TYPE;
@@ -141,6 +143,7 @@ Node* gen_span_onClick(Child* children_arena, size_t children_len, Prop* prop_ar
     prop_arena[0] = (Prop) {
         .key = slice_from("onClick"),
         .value = slice_from("handleClick"),
+        .type = EXPR_PROP_TYPE,
         .next = NULL
     };
 
@@ -164,6 +167,7 @@ Node* gen_button_onClick(Child* children_arena, size_t children_len, Prop* prop_
     prop_arena[0] = (Prop) {
         .key = slice_from("onClick"),
         .value = slice_from("() => alert(\"hi\")"),
+        .type = EXPR_PROP_TYPE,
         .next = NULL
     };
 
@@ -234,6 +238,7 @@ Node* gen_div_key_expr(Child* children_arena, size_t children_len, Prop* prop_ar
     prop_arena[0] = (Prop) {
         .key = slice_from("key"),
         .value = slice_from("\"x\" + n"),
+        .type = EXPR_PROP_TYPE,
         .next = NULL
     };
     children_arena[0].type = NODE_NODE_TYPE;

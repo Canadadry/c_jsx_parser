@@ -84,6 +84,7 @@ static inline PropsResults parse_props(Parser* p) {
         Prop* prop = get_next_prop(p);
         prop->key = p->curTok.literal;
         prop->value = slice_from("true");
+        prop->type = EXPR_PROP_TYPE;
         parser_next_token(p);
 
         if (p->curTok.type == TOKEN_EQUAL) {

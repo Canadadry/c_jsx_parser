@@ -9,6 +9,7 @@ typedef struct Prop {
     Slice key;
     Slice value;
     enum {
+        UNDEF_PROP_TYPE,
         EXPR_PROP_TYPE,
         TEXT_PROP_TYPE
     } type;

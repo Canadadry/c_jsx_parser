@@ -65,13 +65,25 @@ void genNode(Transformer* t,Node* node){
         write_string(t, "{ ");
         write_slice(t, p->key);
         write_string(t, " : ");
-        write_slice(t, p->value);
+        if(p->type==EXPR_PROP_TYPE){
+            write_slice(t, p->value);
+        }else if(p->type==TEXT_PROP_TYPE){
+            write_string(t, "\"");
+            write_slice(t, p->value);
+            write_string(t, "\"");
+        }
         p=p->next;
         while(p!=NULL){
             write_string(t, ", ");
             write_slice(t, p->key);
             write_string(t, " : ");
-            write_slice(t, p->value);
+            if(p->type==EXPR_PROP_TYPE){
+                write_slice(t, p->value);
+            }else if(p->type==TEXT_PROP_TYPE){
+                write_string(t, "\"");
+                write_slice(t, p->value);
+                write_string(t, "\"");
+            }
             p=p->next;
         }
         write_string(t, " }");

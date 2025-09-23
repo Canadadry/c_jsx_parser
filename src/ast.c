@@ -107,7 +107,7 @@ void node_print(Printer* p,Node* node,int indent) {
             write_string(p," = ");
             if(prop->type==EXPR_PROP_TYPE){
                 write_slice(p,prop->value);
-            }else{
+            }else if(prop->type==TEXT_PROP_TYPE){
                 write_char(p,'"');
                 write_slice(p,prop->value);
                 write_char(p,'"');

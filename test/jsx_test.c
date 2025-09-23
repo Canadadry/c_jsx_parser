@@ -30,12 +30,15 @@ void test_jsx_case(Slice in, Slice exp) {
     c.child_capacity = ARENA_SIZE;
 
     CompileResult result = compile(&c);
-    printf("%d:%s",result.type,result.value.ok.start);
     if (result.type != OK) {
         TEST_ERRORF("test_jsx_case","compile %s failed: %d\n", in.start,result.value.err);
     }
     if (slice_equal(result.value.ok, exp) != 0) {
-        TEST_ERRORF("test_jsx_case","compile failed for input: %s\nexpected: %s\ngot: %s\n", in.start, exp.start, result.value.ok.start);
+        TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
+            in.len,in.start,
+            exp.len,exp.start,
+            result.value.ok.len, result.value.ok.start
+        );
     }
 }
 
@@ -61,9 +64,9 @@ void test_jsx() {
                 "    let name = \"Fernando\"\n"
                 "        let myClass = \"open\"\n"
                 "        return (\n"
-                "        <div className={myClass} ref={myRef}>\n"
-                "        <h1>Hello {name}!</h1>\n"
-                "    </div>\n"
+                "        React.createElement(\"div\", { ref : myRef, className : myClass }, \"\n"
+                "        \", React.createElement(\"h1\", null, \"Hello \", name, \"!\"), \"\n"
+                "    \")\n"
                 "    )\n"
                 "}"),
         },

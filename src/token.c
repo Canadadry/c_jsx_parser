@@ -9,6 +9,6 @@ Slice slice_from(const char* str){
 }
 
 int slice_equal(Slice left, Slice right){
-    if (left.len != right.len) return 0;
+    if (left.len != right.len) return 1;
     return strncmp(left.start, right.start, left.len);
 }

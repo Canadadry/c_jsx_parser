@@ -22,6 +22,7 @@ CompileResult compile(Compiler* c){
     result.type=OK;
 
     while(1){
+        c->out_buf_count=0;
         Segmenter segmenter={0};
         segmenter.src = (Slice){.start=c->in_buf,.len=c->in_buf_count};
         int changed = 0;
@@ -58,7 +59,6 @@ CompileResult compile(Compiler* c){
             return result;
         }
         swap_buffer(c);
-
     }
 }
 

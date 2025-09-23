@@ -1,15 +1,29 @@
 #include "jsx.h"
 #include "parser.h"
+#include <string.h>
+#include "token.h"
 #include "transform.h"
 #include "segmenter.h"
 
-CompileResult compile(Compiler* c,Slice in){
+typedef struct{
+    ResultType type;
+    union {
+        Slice ok;
+        ParseErrorCode err;
+    } value;
+}SliceResult;
+
+void copy_slice(Compiler* c, char** dest,size_t *dest_size, size_t *dest_cap, Slice source);
+void swap_buffer(Compiler* c);
+SliceResult transform(Compiler* c,Slice content);
+
+CompileResult compile(Compiler* c){
     CompileResult result ={0};
-    Slice content =  in;
+    result.type=OK;
 
     while(1){
         Segmenter segmenter={0};
-        segmenter.src = in;
+        segmenter.src = (Slice){.start=c->in_buf,.len=c->in_buf_count};
         int changed = 0;
 
         while(1){
@@ -17,41 +31,97 @@ CompileResult compile(Compiler* c,Slice in){
             if (got.type == END) {
                 break;
             }
-            if (got.type == JSX) {
-                Lexer lexer = NewLexer(in);
-                lexer.source = got.content;
-                Parser parser = {0};
-                parser.lexer=&lexer;
-                InitParser(&parser);
-                parser.children = c->children;
-                parser.child_capacity = c->child_capacity;
-                parser.props = c->props;
-                parser.prop_capacity = c->prop_capacity;
-                parser.realloc_fn=c->realloc_fn;
-                parser.userdata=c->userdata;
-
-                Transformer transformer = {0};
-                transformer.createElem=c->createElem;
-                transformer.buf=c->buf;
-                transformer.buf_capacity=c->buf_capacity;
-
-                ParseNodeResult parse_result = ParseNode(&parser);
-                if (parse_result.type != OK) {
-                    result.type=ERR;
-                    result.value.err=parse_result.value.err;
-                }
-                Node* actual = parse_result.value.ok;
-                Transform(&transformer,actual);
-                changed = 1;
-                break;
-            }
             if (got.type == JS) {
+                copy_slice(c,
+                    &c->out_buf,&c->out_buf_count,&c->out_buf_capacity,
+                    got.content
+                );
+            }
+            if (got.type == JSX) {
+                SliceResult r = transform(c,got.content);
+                if(r.type==ERR){
+                    result.type=ERR;
+                    result.value.err=r.value.err;
+                    return result;
+                }
+                changed = 1;
+
+                copy_slice(c,
+                    &c->out_buf,&c->out_buf_count,&c->out_buf_capacity,
+                    r.value.ok
+                );
 
             }
         }
         if(changed==0){
+            result.value.ok = (Slice){.start=c->out_buf,.len=c->out_buf_count};
             return result;
         }
-        content = (Slice){0};
+        swap_buffer(c);
+
     }
+}
+
+SliceResult transform(Compiler* c,Slice content){
+    SliceResult result={0};
+    result.type=OK;
+
+    Lexer lexer = NewLexer(content);
+    lexer.source = content;
+
+    Parser parser = {0};
+    parser.lexer=&lexer;
+    InitParser(&parser);
+    parser.children = c->children;
+    parser.child_capacity = c->child_capacity;
+    parser.props = c->props;
+    parser.prop_capacity = c->prop_capacity;
+    parser.realloc_fn=c->realloc_fn;
+    parser.userdata=c->userdata;
+
+    ParseNodeResult parse_result = ParseNode(&parser);
+    if (parse_result.type != OK) {
+        result.type=ERR;
+        result.value.err=parse_result.value.err;
+        return result;
+    }
+    c->children = parser.children;
+    c->child_capacity = parser.child_capacity;
+    c->props = parser.props;
+    c->prop_capacity = parser.prop_capacity;
+
+    Node* actual = parse_result.value.ok;
+    Transformer transformer = {0};
+    transformer.createElem=c->createElem;
+    transformer.buf=c->transform_buf;
+    transformer.buf_capacity=c->transform_buf_capacity;
+    Transform(&transformer,actual);
+    c->transform_buf=transformer.buf;
+    c->transform_buf_capacity=transformer.buf_capacity;
+
+    result.value.ok = (Slice){.start=transformer.buf,.len=transformer.buf_count};
+
+    return result;
+}
+
+void swap_buffer(Compiler* c){
+    char* tmp_buf = c->out_buf;
+    c->out_buf=c->in_buf;
+    c->in_buf=tmp_buf;
+    size_t tmp_buf_cap = c->out_buf_capacity;
+    c->out_buf_capacity=c->in_buf_capacity;
+    c->in_buf_capacity=tmp_buf_cap;
+    size_t tmp_buf_count = c->out_buf_count;
+    c->out_buf_count=c->in_buf_count;
+    c->in_buf_count=tmp_buf_count;
+}
+
+void copy_slice(Compiler* c, char** dest,size_t *dest_size, size_t *dest_cap, Slice source){
+    while (*dest_size + source.len >= *dest_cap) {
+        if (*dest_cap == 0) *dest_cap = source.len+1;
+        else *dest_cap *= 2;
+        *dest = c->realloc_fn(c->userdata,*dest,*dest_cap);
+    }
+    memcpy(*dest + *dest_size, source.start, source.len);
+    *dest_size+=source.len;
 }

@@ -13,8 +13,14 @@ typedef struct {
 
 typedef struct{
     Slice createElem;
-    char* buf;
-    size_t buf_capacity;
+    char*  in_buf;
+    size_t in_buf_count;
+    size_t in_buf_capacity;
+    char*  out_buf;
+    size_t out_buf_count;
+    size_t out_buf_capacity;
+    char*  transform_buf;
+    size_t transform_buf_capacity;
     Prop *props;
     size_t prop_capacity;
     Child *children;
@@ -24,6 +30,6 @@ typedef struct{
 } Compiler;
 
 
-CompileResult compile(Compiler* c,Slice in);
+CompileResult compile(Compiler* c);
 
 #endif

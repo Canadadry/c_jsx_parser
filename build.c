@@ -9,10 +9,10 @@ void build_lib(){
     build_set_cflags(&ctx, "-Wall -O2");
     // build_set_ldflags(&ctx, "-lm");
 
-
     build_make_dir(ctx.build_dir);
 
     build_add_static_lib(&ctx, "lib"TARGET".a");
+    build_add_entry_point(&ctx, "main.c",TARGET);
 
     build_compile(&ctx, "*.c");
     build_link_all(&ctx);
@@ -43,6 +43,10 @@ int main(int argc, char **argv) {
     if (build_has_arg(argc, argv, 1, "test")){
         build_test();
         BUILD_RUN_CMD("./build/tests/run_tests");
+    }
+
+    if (build_has_arg(argc, argv, 1, "run")){
+        BUILD_RUN_CMD("./build/"TARGET,"example.jsx");
     }
 
     return 0;

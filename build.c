@@ -2,17 +2,21 @@
 
 #define TARGET "jsx_parser"
 
-void build_lib(){
+void build_lib(int debug){
     BuildCtx ctx = build_init();
     build_set_src_dir(&ctx, "src");
     build_set_build_dir(&ctx, "build");
-    build_set_cflags(&ctx, "-Wall -O2");
-    // build_set_ldflags(&ctx, "-lm");
-
     build_make_dir(ctx.build_dir);
 
-    build_add_static_lib(&ctx, "lib"TARGET".a");
-    build_add_entry_point(&ctx, "main.c",TARGET);
+    if (!debug){
+        build_set_cflags(&ctx, "-Wall -O2");
+        build_add_static_lib(&ctx, "lib"TARGET".a");
+        build_add_entry_point(&ctx, "main.c",TARGET);
+    }else{
+        build_set_cflags(&ctx, "-Wall -g");
+        build_add_static_lib(&ctx, "lib"TARGET"d.a");
+        build_add_entry_point(&ctx, "main.c",TARGET"d");
+    }
 
     build_compile(&ctx, "*.c");
     build_link_all(&ctx);
@@ -22,8 +26,8 @@ void build_test(){
     BuildCtx ctx = build_init();
     build_set_src_dir(&ctx, "test");
     build_set_build_dir(&ctx, "build/tests");
-    build_set_cflags(&ctx, "-Wall -O2");
-    build_set_ldflags(&ctx, "-Lbuild -l"TARGET);
+    build_set_cflags(&ctx, "-Wall -g");
+    build_set_ldflags(&ctx, "-Lbuild -l"TARGET"d");
 
     build_make_dir(ctx.build_dir);
 
@@ -39,14 +43,18 @@ int main(int argc, char **argv) {
         BUILD_RUN_CMD("rm", "-rf", "build");
     }
 
-    build_lib();
+    build_lib(build_has_arg(argc, argv, 2, "debug","test"));
     if (build_has_arg(argc, argv, 1, "test")){
         build_test();
         BUILD_RUN_CMD("./build/tests/run_tests");
     }
 
     if (build_has_arg(argc, argv, 1, "run")){
-        BUILD_RUN_CMD("./build/"TARGET,"example.jsx");
+        if(build_has_arg(argc, argv, 2, "debug","test")){
+            BUILD_RUN_CMD("./build/"TARGET"d","example.jsx");
+        }else{
+            BUILD_RUN_CMD("./build/"TARGET,"example.jsx");
+        }
     }
 
     return 0;

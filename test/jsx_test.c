@@ -41,6 +41,43 @@ void test_jsx_case(Slice in, Slice exp) {
     }
 }
 
+void* fn_realloc(void* userdata,void* ptr, size_t size){
+    return realloc(ptr, size);
+}
+
+void test_jsx_case_realloc(Slice in, Slice exp) {
+    Compiler c = {0};
+    c.createElem = slice_from("React.createElement(");;
+    c.in_buf = realloc(c.in_buf,in.len);
+    memcpy(c.in_buf, in.start, in.len);
+    c.in_buf_count = in.len;
+    c.in_buf_capacity = in.len;
+    c.realloc_fn =fn_realloc;
+
+    CompileResult result = compile(&c);
+    if (result.type != OK) {
+        TEST_ERRORF("test_jsx_case","compile %s failed: %d\n", in.start,result.value.err);
+    }
+    if (slice_equal(result.value.ok, exp) != 0) {
+        TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
+            in.len,in.start,
+            exp.len,exp.start,
+            result.value.ok.len, result.value.ok.start
+        );
+    }
+    free(c.in_buf);
+    if(c.out_buf!=NULL){
+        free(c.out_buf);
+    }
+    if(c.children!=NULL){
+        free(c.children);
+    }
+    if(c.props!=NULL){
+        free(c.props);
+    }
+}
+
+
 void test_jsx() {
     struct{Slice in;Slice exp;} cases[] = {
         {
@@ -75,5 +112,7 @@ void test_jsx() {
     for (int i = 0; i < test_count; i++) {
         mt_total++;
         test_jsx_case(cases[i].in,cases[i].exp);
+        mt_total++;
+        test_jsx_case_realloc(cases[i].in,cases[i].exp);
     }
 }

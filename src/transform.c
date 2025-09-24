@@ -16,7 +16,10 @@ static inline int transformer_grow_buf(Transformer* t,size_t len){
     if(t->realloc_fn == NULL){
         return 0;
     }
-    int next_capacity = MIN(2*t->buf_capacity,len);
+    int next_capacity = t->buf_capacity;
+    while(t->buf_count+len >= next_capacity){
+        next_capacity = MIN(2*t->buf_capacity,len);
+    }
     t->buf = t->realloc_fn(t->userdata,t->buf,next_capacity);
     if(t->buf == NULL){
         return 0;

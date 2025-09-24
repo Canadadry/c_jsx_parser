@@ -85,6 +85,12 @@ SliceResult transform(Compiler* c,Slice content){
         result.value.err=parse_result.value.err;
         return result;
     }
+    #define BUF_CAPACITY 1024
+    Printer got_printer ={0};
+    char got_buf[BUF_CAPACITY] ={0};
+    got_printer.buf=got_buf;
+    got_printer.buf_capacity=BUF_CAPACITY;
+    node_print(&got_printer, parse_result.value.ok, 0);
     c->children = parser.children;
     c->child_capacity = parser.child_capacity;
     c->props = parser.props;

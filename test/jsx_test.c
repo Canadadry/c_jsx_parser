@@ -2,9 +2,29 @@
 #include "../src/jsx.h"
 #include "minitest.h"
 #include <string.h>
+#include <execinfo.h>
 
 #define BUF_CAPACITY 2048
 #define ARENA_SIZE 10
+
+#define MAX_CALLSTACK_DEPTH 64
+void print_callstack(int skip) {
+    void *buffer[MAX_CALLSTACK_DEPTH];
+    int nptrs = backtrace(buffer, MAX_CALLSTACK_DEPTH);
+    char **symbols = backtrace_symbols(buffer, nptrs);
+
+    if (symbols == NULL) {
+        perror("backtrace_symbols");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Call stack:\n");
+    for (int i = skip; i < nptrs; i++) {
+        printf("  [%d] %s\n", i, symbols[i]);
+    }
+
+    free(symbols);
+}
 
 void test_jsx_case(Slice in, Slice exp) {
     Compiler c = {0};
@@ -30,7 +50,7 @@ void test_jsx_case(Slice in, Slice exp) {
 
     CompileResult result = compile(&c);
     if (result.type != OK) {
-        TEST_ERRORF("test_jsx_case","compile %s failed: %d\n", in.start,result.value.err);
+        TEST_ERRORF("test_jsx_case","compile %s failed at %d : %s\n", in.start,result.value.err.at,parser_error_to_string(result.value.err.code));
     }
     if (slice_equal(result.value.ok, exp) != 0) {
         TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
@@ -42,6 +62,8 @@ void test_jsx_case(Slice in, Slice exp) {
 }
 
 void* fn_realloc(void* userdata,void* ptr, size_t size){
+    print_callstack(2);
+    printf("allocating memory %lu\n",size);
     return realloc(ptr, size);
 }
 
@@ -54,11 +76,15 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
     c.in_buf_capacity = in.len;
     c.realloc_fn =fn_realloc;
 
+    printf("test_jsx_case_realloc\n");
     CompileResult result = compile(&c);
     if (result.type != OK) {
-        TEST_ERRORF("test_jsx_case","compile %s failed: %d\n", in.start,result.value.err);
+        TEST_ERRORF("test_jsx_case","compile %.*s failed at %d %s : %.*s, got %s\n",
+            in.len,in.start,result.value.err.at,parser_error_to_string(result.value.err.code),
+            10,in.start+result.value.err.at-5,token_type_to_string(result.value.err.token)
+        );
     }
-    if (slice_equal(result.value.ok, exp) != 0) {
+    if (result.type == OK && slice_equal(result.value.ok, exp) != 0) {
         TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
             in.len,in.start,
             exp.len,exp.start,

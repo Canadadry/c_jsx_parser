@@ -6,6 +6,22 @@
 #include <string.h>
 #include <stdlib.h>
 
+const char* parser_error_to_string(ParseErrorCode err){
+    switch(err){
+        case PARSER_OK: return "no error" ;
+        case PARSER_ERR_CHILDREN_UNEXPECTED_TOKEN: return "children_unexpected_token";
+        case PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_1: return "closing_unexpected_token_1 expect </" ;
+        case PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_2: return "closing_unexpected_token_2 expect good tagname" ;
+        case PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_3: return "closing_unexpected_token_3 expect >" ;
+        case PARSER_ERR_EXPECTED_OPENTAG_NAME: return "expected_opentag_name";
+        case PARSER_ERR_EXPECTED_OPENTAG: return "expected_opentag" ;
+        case PARSER_ERR_EXPECTED_ENDTAG: return "expected_endtag" ;
+        case PARSER_ERR_EXPECTED_PROP: return "expected_prop" ;
+        case PARSER_ERR_MEMORY_ALLOCATION: return "memory_allocation" ;
+    }
+    return "";
+}
+
 void InitParser(Parser *parser) {
     parser->curTok = GetNextToken(parser->lexer);
     parser->peekTok = GetNextToken(parser->lexer);
@@ -16,7 +32,7 @@ static inline int parser_grow_children(Parser* p){
         return 0;
     }
     int next_capacity = (p->child_capacity*2)+1;
-    p->children = p->realloc_fn(p->userdata,p->children,next_capacity);
+    p->children = p->realloc_fn(p->userdata,p->children,next_capacity*sizeof(Child));
     if(p->children == NULL){
         return 0;
     }
@@ -29,7 +45,7 @@ static inline int parser_grow_prop(Parser* p){
         return 0;
     }
     int next_capacity = (p->prop_capacity*2)+1;
-    p->props = p->realloc_fn(p->userdata,p->props,next_capacity);
+    p->props = p->realloc_fn(p->userdata,p->props,next_capacity*sizeof(Prop));
     if(p->props == NULL){
         return 0;
     }
@@ -71,7 +87,7 @@ typedef struct {
     ResultType type;
     union {
         Prop* ok;
-        ParseErrorCode err;
+        Error err;
     } value;
 } PropsResults;
 
@@ -99,7 +115,9 @@ static inline PropsResults parse_props(Parser* p) {
                 parser_next_token(p);
             } else {
                 result.type = ERR;
-                result.value.err = PARSER_ERR_EXPECTED_PROP;
+                result.value.err.code = PARSER_ERR_EXPECTED_PROP;
+                result.value.err.at = p->curTok.pos;
+                result.value.err.token = p->curTok.type;
                 return result;
             }
         }
@@ -114,17 +132,19 @@ typedef struct {
     ResultType type;
     union {
         Child* ok;
-        ParseErrorCode err;
+        Error err;
     } value;
 } ChildrenResults;
 
-static void set_error(ChildrenResults* result, ParseErrorCode err){
+static void set_error(ChildrenResults* result, ParseErrorCode err,int at,TokenType type){
     result->type = ERR;
-    result->value.err = PARSER_ERR_EXPECTED_TAG;
+    result->value.err.code = err;
+    result->value.err.token = type;
+    result->value.err.at=at;
 }
 
 
-ParseErrorCode parse_child_node(Parser* p,Child* child) ;
+Error parse_child_node(Parser* p,Child* child) ;
 
 Child* reverse_children(Child* head) {
     Child* prev = NULL;
@@ -159,16 +179,15 @@ static inline ChildrenResults parse_children(Parser* p) {
                 parser_next_token(p);
                 break;
             case TOKEN_OPEN_TAG: {
-                ParseErrorCode err = parse_child_node(p,child);
-                if (err != 0) {
-                    set_error(&result,err);
+                Error err = parse_child_node(p,child);
+                if (err.code != PARSER_OK) {
+                    result.value.err= err;
                     return result;
                 }
                 break;
             }
             default:
-                result.type = ERR;
-                result.value.err = PARSER_ERR_UNEXPECTED_TOKEN;
+                set_error(&result,PARSER_ERR_CHILDREN_UNEXPECTED_TOKEN,p->curTok.pos,p->curTok.type);
                 return result;
         }
         child->next=result.value.ok;
@@ -178,41 +197,45 @@ static inline ChildrenResults parse_children(Parser* p) {
     return result;
 }
 
-static inline ParseErrorCode parse_closing_tag(Parser* p,Slice tag){
+static inline Error parse_closing_tag(Parser* p,Slice tag){
     if (p->curTok.type != TOKEN_OPEN_TAG || p->peekTok.type != TOKEN_SLASH) {
-        return PARSER_ERR_UNEXPECTED_TOKEN;
+        return (Error){.code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_1,.at=p->curTok.pos,.token=p->curTok.type};
     }
     parser_next_token(p);
     parser_next_token(p);
 
     if (p->curTok.type != TOKEN_IDENT || slice_equal(p->curTok.literal, tag) != 0) {
-         return PARSER_ERR_UNEXPECTED_TOKEN;
+
+        // printf("end tag dont match with (%d) %.*s\n",tag.len,tag.len,tag.start);
+        // printf("got (%d) %.*s\n",p->curTok.literal.len,p->curTok.literal.len,p->curTok.literal.start);
+        return (Error){.code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_2,.at=p->curTok.pos,.token=p->curTok.type};
     }
     parser_next_token(p);
     if (p->curTok.type != TOKEN_CLOSE_TAG) {
-        return PARSER_ERR_UNEXPECTED_TOKEN;
+        return (Error){.code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_3,.at=p->curTok.pos,.token=p->curTok.type};
     }
     parser_next_token(p);
-    return 0;
+    return (Error){.code=PARSER_OK,.at=0};
 }
 
-ParseErrorCode parse_child_node(Parser* p,Child* child) {
+Error parse_child_node(Parser* p,Child* child) {
     child->type = NODE_NODE_TYPE;
     Node* node= &child->value.node;
 
     if (node == NULL){
-        return PARSER_ERR_MEMORY_ALLOCATION;
+        return (Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};
     }
 
     if (p->curTok.type != TOKEN_OPEN_TAG) {
-         return PARSER_ERR_EXPECTED_TAG;
+        return (Error){.code=PARSER_ERR_EXPECTED_OPENTAG,.at=p->curTok.pos,.token=p->curTok.type};
     }
     parser_next_token(p);
 
     if (p->curTok.type != TOKEN_IDENT) {
-        return PARSER_ERR_UNEXPECTED_TOKEN;
+        return (Error){.code=PARSER_ERR_EXPECTED_OPENTAG_NAME,.at=p->curTok.pos,.token=p->curTok.type};
     }
     node->Tag = p->curTok.literal;
+    // printf("start tag(%d) %.*s\n",node->Tag.len,node->Tag.len,node->Tag.start);
     parser_next_token(p);
 
     PropsResults props_result = parse_props(p);
@@ -224,11 +247,11 @@ ParseErrorCode parse_child_node(Parser* p,Child* child) {
     if (p->curTok.type == TOKEN_SLASH && p->peekTok.type == TOKEN_CLOSE_TAG) {
         parser_next_token(p);
         parser_next_token(p);
-        return 0;
+        return (Error){.code=PARSER_OK,.at=p->curTok.pos};
     }
 
     if (p->curTok.type != TOKEN_CLOSE_TAG) {
-        return PARSER_ERR_UNEXPECTED_TOKEN;
+        return (Error){.code=PARSER_ERR_EXPECTED_ENDTAG,.at=p->curTok.pos,.token=p->curTok.type};
     }
     parser_next_token(p);
 
@@ -238,12 +261,7 @@ ParseErrorCode parse_child_node(Parser* p,Child* child) {
     }
     node->Children = children_result.value.ok;
 
-    ParseErrorCode err = parse_closing_tag(p,node->Tag);
-    if (err != 0){
-        return err;
-    }
-
-    return 0;
+    return parse_closing_tag(p,node->Tag);
 }
 
 ParseNodeResult ParseNode(Parser* p) {
@@ -251,8 +269,8 @@ ParseNodeResult ParseNode(Parser* p) {
     ParseNodeResult result = {0};
     result.type=OK;
     result.value.ok=&child->value.node;
-    ParseErrorCode err = parse_child_node(p,child);
-    if (err!=0){
+    Error err = parse_child_node(p,child);
+    if (err.code!=PARSER_OK){
         result.type=ERR;
         result.value.err=err;
     }

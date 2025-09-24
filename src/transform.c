@@ -17,6 +17,9 @@ static inline int transformer_grow_buf(Transformer* t,size_t len){
         return 0;
     }
     int next_capacity = t->buf_capacity;
+    if(next_capacity==0){
+        next_capacity=1;
+    }
     while(t->buf_count+len >= next_capacity){
         next_capacity = MIN(2*t->buf_capacity,len);
     }

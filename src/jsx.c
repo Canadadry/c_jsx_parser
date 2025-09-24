@@ -9,7 +9,7 @@ typedef struct{
     ResultType type;
     union {
         Slice ok;
-        ParseErrorCode err;
+        Error err;
     } value;
 }SliceResult;
 
@@ -43,6 +43,7 @@ CompileResult compile(Compiler* c){
                 if(r.type==ERR){
                     result.type=ERR;
                     result.value.err=r.value.err;
+                    result.value.err.at += got.content.start - c->in_buf;
                     return result;
                 }
                 changed = 1;
@@ -101,6 +102,8 @@ SliceResult transform(Compiler* c,Slice content){
     transformer.createElem=c->createElem;
     transformer.buf=c->transform_buf;
     transformer.buf_capacity=c->transform_buf_capacity;
+    transformer.realloc_fn=c->realloc_fn;
+    transformer.userdata=c->userdata;
     Transform(&transformer,actual);
     c->transform_buf=transformer.buf;
     c->transform_buf_capacity=transformer.buf_capacity;

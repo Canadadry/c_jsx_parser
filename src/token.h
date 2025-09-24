@@ -14,6 +14,8 @@ typedef enum {
     TOKEN_EXPR        // JS expr inside { ... }
 } TokenType;
 
+const char* token_type_to_string(TokenType type);
+
 typedef struct{
     const char* start;
     int len;

@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include "ast.h"
+#include "token.h"
 
 typedef struct {
     Lexer *lexer;
@@ -20,12 +21,24 @@ typedef struct {
 
 typedef enum {
     PARSER_OK,
-    PARSER_ERR_UNEXPECTED_TOKEN,
-    PARSER_ERR_EXPECTED_TAG,
+    PARSER_ERR_CHILDREN_UNEXPECTED_TOKEN,
+    PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_1,
+    PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_2,
+    PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_3,
+    PARSER_ERR_EXPECTED_OPENTAG_NAME,
+    PARSER_ERR_EXPECTED_OPENTAG,
+    PARSER_ERR_EXPECTED_ENDTAG,
     PARSER_ERR_EXPECTED_PROP,
     PARSER_ERR_MEMORY_ALLOCATION
 } ParseErrorCode;
 
+typedef struct{
+    ParseErrorCode code;
+    int at;
+    TokenType token;
+}Error;
+
+const char* parser_error_to_string(ParseErrorCode err);
 
 typedef enum{OK,ERR} ResultType;
 
@@ -33,7 +46,7 @@ typedef struct {
     ResultType type;
     union {
         Node* ok;
-        ParseErrorCode err;
+        Error err;
     } value;
 } ParseNodeResult;
 

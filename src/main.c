@@ -1,4 +1,5 @@
 #include "jsx.h"
+#include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -76,7 +77,7 @@ int main(int argc,char ** argv){
     c.realloc_fn =fn_realloc;
     CompileResult result = compile(&c);
     if (result.type != OK) {
-        printf("compile jsx failed: %d\n", result.value.err);
+        printf("compile jsx failed at %d : %s\n", result.value.err.at,parser_error_to_string(result.value.err.code));
         return 1;
     }else{
         printf("%.*s\n",result.value.ok.len,result.value.ok.start);

@@ -7,7 +7,7 @@ typedef struct {
     ResultType type;
     union {
         Slice ok;
-        ParseErrorCode err;
+        Error err;
     } value;
 } CompileResult;
 

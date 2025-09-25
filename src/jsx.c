@@ -1,4 +1,5 @@
 #include "jsx.h"
+#include "ast.h"
 #include "parser.h"
 #include <string.h>
 #include "token.h"
@@ -73,12 +74,7 @@ SliceResult transform(Compiler* c,Slice content){
     Parser parser = {0};
     parser.lexer=&lexer;
     InitParser(&parser);
-    parser.children = c->children;
-    parser.child_capacity = c->child_capacity;
-    parser.props = c->props;
-    parser.prop_capacity = c->prop_capacity;
-    parser.realloc_fn=c->realloc_fn;
-    parser.userdata=c->userdata;
+    parser.arena = &c->arena;
 
     ParseNodeResult parse_result = ParseNode(&parser);
     if (parse_result.type != OK) {
@@ -91,20 +87,16 @@ SliceResult transform(Compiler* c,Slice content){
     char got_buf[BUF_CAPACITY] ={0};
     got_printer.buf=got_buf;
     got_printer.buf_capacity=BUF_CAPACITY;
-    node_print(&got_printer, parse_result.value.ok, 0);
-    c->children = parser.children;
-    c->child_capacity = parser.child_capacity;
-    c->props = parser.props;
-    c->prop_capacity = parser.prop_capacity;
+    value_print(&got_printer,&c->arena, parse_result.value.ok, 0);
 
-    Node* actual = parse_result.value.ok;
+    ValueIndex actual = parse_result.value.ok;
     Transformer transformer = {0};
     transformer.createElem=c->createElem;
     transformer.buf=c->transform_buf;
     transformer.buf_capacity=c->transform_buf_capacity;
-    transformer.realloc_fn=c->realloc_fn;
-    transformer.userdata=c->userdata;
-    Transform(&transformer,actual);
+    transformer.realloc_fn=c->arena.realloc_fn;
+    transformer.userdata=c->arena.userdata;
+    Transform(&transformer,&c->arena,actual);
     c->transform_buf=transformer.buf;
     c->transform_buf_capacity=transformer.buf_capacity;
 
@@ -129,7 +121,7 @@ void copy_slice(Compiler* c, char** dest,size_t *dest_size, size_t *dest_cap, Sl
     while (*dest_size + source.len >= *dest_cap) {
         if (*dest_cap == 0) *dest_cap = source.len+1;
         else *dest_cap *= 2;
-        *dest = c->realloc_fn(c->userdata,*dest,*dest_cap);
+        *dest = c->arena.realloc_fn(c->arena.userdata,*dest,*dest_cap);
     }
     memcpy(*dest + *dest_size, source.start, source.len);
     *dest_size+=source.len;

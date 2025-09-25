@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include "token.h"
 
+
+typedef int PropIndex;
+
 typedef struct Prop {
     Slice key;
     Slice value;
@@ -13,16 +16,20 @@ typedef struct Prop {
         EXPR_PROP_TYPE,
         TEXT_PROP_TYPE
     } type;
-    struct Prop* next;
+    PropIndex next;
 } Prop;
+
+
+typedef int ValueIndex;
 
 typedef struct Node {
     Slice Tag;
-    Prop* Props;
-    struct Child* Children;
+    PropIndex Props;
+    ValueIndex Children;
+
 } Node;
 
-typedef struct Child{
+typedef struct Value{
     enum {
         NODE_NODE_TYPE,
         EXPR_NODE_TYPE,
@@ -33,19 +40,8 @@ typedef struct Child{
         Slice expr;
         Slice text;
     } value;
-    struct Child* next;
-} Child;
+    ValueIndex next;
+} Value;
 
-bool node_equal(Node* a, Node* b);
-
-typedef struct {
-    char* buf;
-    size_t buf_count;
-    size_t buf_capacity;
-    void* (*realloc_fn)(void* userdata,void* ptr, size_t size);
-    void* userdata;
-} Printer;
-
-void node_print(Printer* printer,Node* node,int indent);
 
 #endif

@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "arena.h"
 #include "ast.h"
 #include "lexer.h"
 #include "token.h"
@@ -27,55 +28,6 @@ void InitParser(Parser *parser) {
     parser->peekTok = GetNextToken(parser->lexer);
 }
 
-static inline int parser_grow_children(Parser* p){
-    if(p->realloc_fn == NULL){
-        return 0;
-    }
-    int next_capacity = (p->child_capacity*2)+1;
-    p->children = p->realloc_fn(p->userdata,p->children,next_capacity*sizeof(Child));
-    if(p->children == NULL){
-        return 0;
-    }
-    p->child_capacity=next_capacity;
-    return 1;
-}
-
-static inline int parser_grow_prop(Parser* p){
-    if(p->realloc_fn == NULL){
-        return 0;
-    }
-    int next_capacity = (p->prop_capacity*2)+1;
-    p->props = p->realloc_fn(p->userdata,p->props,next_capacity*sizeof(Prop));
-    if(p->props == NULL){
-        return 0;
-    }
-    p->prop_capacity=next_capacity;
-    return 1;
-}
-
-static inline Child* get_next_child(Parser* p){
-    if(p->child_capacity == 0 || p->child_count == p->child_capacity){
-        int ok = parser_grow_children(p);
-        if(ok ==0){
-            return  NULL;
-        }
-    }
-    Child* c = &p->children[p->child_count];
-    p->child_count++;
-    return c;
-}
-
-static inline Prop* get_next_prop(Parser* p){
-    if(p->prop_capacity == 0 || p->prop_count == p->prop_capacity){
-        int ok = parser_grow_prop(p);
-        if(ok ==0){
-            return  NULL;
-        }
-    }
-    Prop* prop = &p->props[p->prop_count];
-    p->prop_count++;
-    return prop;
-}
 
 static void parser_next_token(Parser* p) {
     p->curTok = p->peekTok;
@@ -86,7 +38,7 @@ static void parser_next_token(Parser* p) {
 typedef struct {
     ResultType type;
     union {
-        Prop* ok;
+        PropIndex ok;
         Error err;
     } value;
 } PropsResults;
@@ -97,7 +49,9 @@ static inline PropsResults parse_props(Parser* p) {
     result.type=OK;
 
     while (p->curTok.type == TOKEN_IDENT) {
-        Prop* prop = get_next_prop(p);
+        PropIndex prop_index = get_next_prop(p->arena);
+        Prop* prop = &p->arena->props[prop_index];
+        prop->next=-1;
         prop->key = p->curTok.literal;
         prop->value = slice_from("true");
         prop->type = EXPR_PROP_TYPE;
@@ -122,7 +76,7 @@ static inline PropsResults parse_props(Parser* p) {
             }
         }
         prop->next=result.value.ok;
-        result.value.ok=prop;
+        result.value.ok=prop_index;
     }
 
     return result;
@@ -131,7 +85,7 @@ static inline PropsResults parse_props(Parser* p) {
 typedef struct {
     ResultType type;
     union {
-        Child* ok;
+        ValueIndex ok;
         Error err;
     } value;
 } ChildrenResults;
@@ -144,20 +98,19 @@ static void set_error(ChildrenResults* result, ParseErrorCode err,int at,TokenTy
 }
 
 
-Error parse_child_node(Parser* p,Child* child) ;
+Error parse_child_node(Parser* p,ValueIndex child) ;
 
-Child* reverse_children(Child* head) {
-    Child* prev = NULL;
-    Child* current = head;
-    Child* next = NULL;
+ValueIndex reverse_children(Arena* arena,ValueIndex head) {
+    ValueIndex prev = -1;
+    ValueIndex current = head;
+    ValueIndex next = -1;
 
-    while (current != NULL) {
-        next = current->next;
-        current->next = prev;
+    while (current >= 0) {
+        next = arena->values[current].next;
+        arena->values[current].next = prev;
         prev = current;
         current = next;
     }
-
     return prev;
 }
 
@@ -166,7 +119,9 @@ static inline ChildrenResults parse_children(Parser* p) {
     result.type=OK;
 
     while (p->curTok.type != TOKEN_OPEN_TAG || (p->curTok.type == TOKEN_OPEN_TAG && p->peekTok.type != TOKEN_SLASH)) {
-        Child* child =  get_next_child(p);
+        ValueIndex child_index =  get_next_value(p->arena);
+        Value* child =  &p->arena->values[child_index];
+        child->next=-1;
         switch (p->curTok.type) {
             case TOKEN_TEXT:
                 child->type = TEXT_NODE_TYPE;
@@ -179,7 +134,7 @@ static inline ChildrenResults parse_children(Parser* p) {
                 parser_next_token(p);
                 break;
             case TOKEN_OPEN_TAG: {
-                Error err = parse_child_node(p,child);
+                Error err = parse_child_node(p,child_index);
                 if (err.code != PARSER_OK) {
                     result.value.err= err;
                     return result;
@@ -191,9 +146,9 @@ static inline ChildrenResults parse_children(Parser* p) {
                 return result;
         }
         child->next=result.value.ok;
-        result.value.ok=child;
+        result.value.ok=child_index;
     }
-    result.value.ok=reverse_children(result.value.ok);
+    result.value.ok=reverse_children(p->arena,result.value.ok);
     return result;
 }
 
@@ -218,7 +173,8 @@ static inline Error parse_closing_tag(Parser* p,Slice tag){
     return (Error){.code=PARSER_OK,.at=0};
 }
 
-Error parse_child_node(Parser* p,Child* child) {
+Error parse_child_node(Parser* p,ValueIndex child_idx) {
+    Value* child = &p->arena->values[child_idx];
     child->type = NODE_NODE_TYPE;
     Node* node= &child->value.node;
 
@@ -265,11 +221,13 @@ Error parse_child_node(Parser* p,Child* child) {
 }
 
 ParseNodeResult ParseNode(Parser* p) {
-    Child* child =  get_next_child(p);
+    ValueIndex child_idx =  get_next_value(p->arena);
+    Value* child = &p->arena->values[child_idx];
+    child->next = -1;
     ParseNodeResult result = {0};
     result.type=OK;
-    result.value.ok=&child->value.node;
-    Error err = parse_child_node(p,child);
+    result.value.ok=child_idx;
+    Error err = parse_child_node(p,child_idx);
     if (err.code!=PARSER_OK){
         result.type=ERR;
         result.value.err=err;

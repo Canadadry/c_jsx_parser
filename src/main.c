@@ -74,7 +74,7 @@ int main(int argc,char ** argv){
     c.in_buf = fcontent;
     c.in_buf_count = strlen(fcontent);
     c.in_buf_capacity = strlen(fcontent);
-    c.realloc_fn =fn_realloc;
+    c.arena.realloc_fn =fn_realloc;
     CompileResult result = compile(&c);
     if (result.type != OK) {
         printf("compile jsx failed at %d : %s\n", result.value.err.at,parser_error_to_string(result.value.err.code));

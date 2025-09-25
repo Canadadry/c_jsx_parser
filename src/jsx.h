@@ -21,12 +21,7 @@ typedef struct{
     size_t out_buf_capacity;
     char*  transform_buf;
     size_t transform_buf_capacity;
-    Prop *props;
-    size_t prop_capacity;
-    Child *children;
-    size_t child_capacity;
-    void* (*realloc_fn)(void* userdata,void* ptr, size_t size);
-    void* userdata;
+    Arena arena;
 } Compiler;
 
 

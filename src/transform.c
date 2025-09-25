@@ -1,4 +1,5 @@
 #include "transform.h"
+#include "arena.h"
 #include "ast.h"
 #include "token.h"
 #include <string.h>
@@ -51,7 +52,8 @@ static void write_char(Transformer* t,char c){
     t->buf_count++;
 }
 
-void genNode(Transformer* t,Node* node){
+void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
+    Node* node = &arena->values[node_idx].value.node;
     write_slice(t,t->createElem);
     if(isUpper(node->Tag.start[0])){
         write_slice(t,node->Tag);
@@ -63,10 +65,10 @@ void genNode(Transformer* t,Node* node){
 
     write_string(t, ", ");
 
-    if(node->Props==NULL){
+    if(node->Props<0){
         write_string(t, "null");
     }else{
-        Prop* p = node->Props;
+        Prop* p = &arena->props[node->Props];
 
         write_string(t, "{ ");
         write_slice(t, p->key);
@@ -78,8 +80,9 @@ void genNode(Transformer* t,Node* node){
             write_slice(t, p->value);
             write_string(t, "\"");
         }
-        p=p->next;
-        while(p!=NULL){
+        PropIndex p_idx = p->next;
+        while(p_idx>=0){
+            p= &arena->props[p_idx];
             write_string(t, ", ");
             write_slice(t, p->key);
             write_string(t, " : ");
@@ -90,13 +93,14 @@ void genNode(Transformer* t,Node* node){
                 write_slice(t, p->value);
                 write_string(t, "\"");
             }
-            p=p->next;
+            p_idx = p->next;
         }
         write_string(t, " }");
     }
 
-    Child* c =node->Children;
-    while(c!=NULL){
+    ValueIndex child_idx =node->Children;
+    while(child_idx>=0){
+        Value* c = &arena->values[child_idx];
         write_string(t, ", ");
         switch(c->type){
             case TEXT_NODE_TYPE:
@@ -108,13 +112,13 @@ void genNode(Transformer* t,Node* node){
                 write_slice(t,c->value.expr);
                 break;
             case NODE_NODE_TYPE:
-                genNode(t,&c->value.node);
+                genNode(t,arena,child_idx);
         }
-        c=c->next;
+        child_idx=c->next;
     }
     write_char(t,')');
 }
 
-void Transform(Transformer* t,Node* node){
-    genNode(t,node);
+void Transform(Transformer* t,Arena* arena,ValueIndex node){
+    genNode(t,arena,node);
 }

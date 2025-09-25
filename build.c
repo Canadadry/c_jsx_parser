@@ -13,7 +13,7 @@ void build_lib(int debug){
         build_add_static_lib(&ctx, "lib"TARGET".a");
         build_add_entry_point(&ctx, "main.c",TARGET);
     }else{
-        build_set_cflags(&ctx, "-Wall -g -fsanitize=address");
+        build_set_cflags(&ctx, "-Wall -Werror -g -fsanitize=address");
         build_set_ldflags(&ctx, "-fsanitize=address");
         build_add_static_lib(&ctx, "lib"TARGET"d.a");
         build_add_entry_point(&ctx, "main.c",TARGET"d");

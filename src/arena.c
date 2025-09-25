@@ -46,7 +46,6 @@ PropIndex get_next_prop(Arena* a){
             return  -1;
         }
     }
-    Prop* prop = &a->props[a->prop_count];
     a->prop_count++;
     return a->prop_count-1;
 }
@@ -145,7 +144,11 @@ static void write_indent(Printer* p,int indent){
     }
 }
 
-void node_print(Arena* arena,Printer* p,Node* node,int indent) {
+void value_print(Printer* p,Arena* arena,ValueIndex index,int indent) {
+    if(index <=0 || index >= arena->prop_count || arena->values[index].type != NODE_NODE_TYPE){
+        return;
+    }
+    Node* node = &arena->values[index].value.node;
     write_indent(p,indent);
     write_char(p,'<');
     write_slice(p,node->Tag);
@@ -172,7 +175,7 @@ void node_print(Arena* arena,Printer* p,Node* node,int indent) {
         ValueIndex child = node->Children;
         while (child >= 0) {
             if (arena->values[child].type == NODE_NODE_TYPE) {
-                node_print(arena,p,&arena->values[child].value.node,indent+1);
+                value_print(p,arena,child,indent+1);
             } else {
                 write_indent(p,indent+1);
                 write_slice(p,arena->values[child].value.expr);

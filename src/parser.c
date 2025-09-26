@@ -47,6 +47,7 @@ typedef struct {
 static inline PropsResults parse_props(Parser* p) {
     PropsResults result = {0};
     result.type=OK;
+    result.value.ok=-1;
 
     while (p->curTok.type == TOKEN_IDENT) {
         PropIndex prop_index = get_next_prop(p->arena);
@@ -182,6 +183,7 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
     child->type = NODE_NODE_TYPE;
     Node* node= &child->value.node;
     node->Children=-1;
+    node->Props=-1;
 
     if (node == NULL){
         return (Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};

@@ -67,6 +67,7 @@ static inline void test_parser_case(ParserTestCase tt) {
 #define GEN_SIMPLE_TEXT_INPUT "<div>ok</div>"
 ValueIndex GEN_SIMPLE_TEXT_FN(Arena* arena) {
     if (arena->values_capacity < 2) return -1;
+    arena->values_count=2;
     arena->values[0].type = NODE_NODE_TYPE;
     arena->values[0].next = -1;
     arena->values[0].value.node = (Node) {
@@ -83,6 +84,7 @@ ValueIndex GEN_SIMPLE_TEXT_FN(Arena* arena) {
 #define GEN_MULTIPLE_NODES_INPUT "<div><a></a><b></b></div>"
 ValueIndex GEN_MULTIPLE_NODES_FN(Arena* arena) {
     if (arena->values_capacity < 3) return -1;
+    arena->values_count=3;
     arena->values[0].type = NODE_NODE_TYPE;
     arena->values[0].next = -1;
     arena->values[0].value.node = (Node) {
@@ -91,12 +93,14 @@ ValueIndex GEN_MULTIPLE_NODES_FN(Arena* arena) {
         .Children = 1,
     };
     arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].next = 2;
     arena->values[1].value.node = (Node) {
         .Tag = slice_from("a"),
         .Props = -1,
-        .Children = 2
+        .Children = -1
     };
     arena->values[2].type = NODE_NODE_TYPE;
+    arena->values[2].next = -1;
     arena->values[2].value.node = (Node) {
         .Tag = slice_from("b"),
         .Props = -1,
@@ -105,164 +109,176 @@ ValueIndex GEN_MULTIPLE_NODES_FN(Arena* arena) {
     return 0;
 }
 
-// Node* gen_button_disabled(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2 || prop_len < 1) return NULL;
-//     children_arena[0].type = NODE_NODE_TYPE;
-//     children_arena[0].value.node = (Node) {
-//         .Tag = slice_from("button"),
-//         .Props = &prop_arena[0],
-//         .Children = &children_arena[1]
-//     };
-//     children_arena[1].type = TEXT_NODE_TYPE;
-//     children_arena[1].value.text = slice_from("press");
-//     children_arena[1].next = NULL;
-//     prop_arena[0] = (Prop) {
-//         .key = slice_from("disabled"),
-//         .value = slice_from("true"),
-//         .type = EXPR_PROP_TYPE,
-//     };
+#define GEN_BUTTON_DISABLED_INPUT "<button disabled>press</button>"
+ValueIndex GEN_BUTTON_DISABLED_FN(Arena* arena) {
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    arena->values[0].type = NODE_NODE_TYPE;
+    arena->values[0].next = -1;
+    arena->values[0].value.node = (Node) {
+        .Tag = slice_from("button"),
+        .Props = 0,
+        .Children = 1,
+    };
+    arena->values[1].type = TEXT_NODE_TYPE;
+    arena->values[1].value.text = slice_from("press");
+    arena->values[1].next = -1;
+    arena->props[0] = (Prop) {
+        .key = slice_from("disabled"),
+        .value = slice_from("true"),
+        .type = EXPR_PROP_TYPE,
+        .next = -1,
+    };
 
-//     return &children_arena[0].value.node;
-// }
+    return 0;
+}
 
-// Node* gen_button_class(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2 || prop_len < 1) return NULL;
-//     children_arena[0].type = NODE_NODE_TYPE;
-//     children_arena[0].value.node = (Node) {
-//         .Tag = slice_from("button"),
-//         .Props = &prop_arena[0],
-//         .Children = &children_arena[1]
-//     };
-//     prop_arena[0] = (Prop) {
-//         .key = slice_from("class"),
-//         .value = slice_from("btn"),
-//         .type = TEXT_PROP_TYPE,
-//         .next = NULL
-//     };
-//     children_arena[1].type = TEXT_NODE_TYPE;
-//     children_arena[1].value.text = slice_from("press");
+#define GEN_BUTTON_CLASS_INPUT "<button class=\"btn\">press</button>"
+ValueIndex GEN_BUTTON_CLASS_FN(Arena* arena) {
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    arena->values[0].type = NODE_NODE_TYPE;
+    arena->values[0].next = -1;
+    arena->values[0].value.node = (Node) {
+        .Tag = slice_from("button"),
+        .Props = 0,
+        .Children = 1,
+    };
+    arena->props[0] = (Prop) {
+        .key = slice_from("class"),
+        .value = slice_from("btn"),
+        .type = TEXT_PROP_TYPE,
+        .next = -1
+    };
+    arena->values[1].type = TEXT_NODE_TYPE;
+    arena->values[1].next = -1;
+    arena->values[1].value.text = slice_from("press");
 
-//     return &children_arena[0].value.node;
-// }
+    return 0;
+}
 
-// Node* gen_span_onClick(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2 || prop_len < 1) return NULL;
-//     children_arena[0].type = TEXT_NODE_TYPE;
-//     children_arena[0].value.text = slice_from("X");
-//     children_arena[0].next = NULL;
+#define GEN_SPAN_ONCLICK_INPUT "<span onClick={handleClick}>X</span>"
+ValueIndex GEN_SPAN_ONCLICK_FN(Arena* arena) {
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    arena->values[0].type = TEXT_NODE_TYPE;
+    arena->values[0].value.text = slice_from("X");
+    arena->values[0].next = -1;
 
-//     prop_arena[0] = (Prop) {
-//         .key = slice_from("onClick"),
-//         .value = slice_from("handleClick"),
-//         .type = EXPR_PROP_TYPE,
-//         .next = NULL
-//     };
+    arena->props[0] = (Prop) {
+        .key = slice_from("onClick"),
+        .value = slice_from("handleClick"),
+        .type = EXPR_PROP_TYPE,
+        .next = -1
+    };
 
-//     children_arena[1].type = NODE_NODE_TYPE;
-//     children_arena[1].value.node = (Node) {
-//         .Tag = slice_from("span"),
-//         .Props = &prop_arena[0],
-//         .Children = &children_arena[0]
-//     };
-//     children_arena[1].next = NULL;
+    arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].next = -1;
+    arena->values[1].value.node = (Node) {
+        .Tag = slice_from("span"),
+        .Props = 0,
+        .Children = 0
+    };
 
-//     return &children_arena[1].value.node;
-// }
+    return 1;
+}
 
-// Node* gen_button_onClick(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2 || prop_len < 1) return NULL;
-//     children_arena[0].type = TEXT_NODE_TYPE;
-//     children_arena[0].value.text = slice_from("Click me");
-//     children_arena[0].next = NULL;
+#define GEN_BUTTON_ONCLICK_INPUT "<button onClick={() => alert(\"hi\")}>Click me</button>"
+ValueIndex GEN_BUTTON_ONCLICK_FN(Arena* arena) {
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    arena->values[0].type = TEXT_NODE_TYPE;
+    arena->values[0].value.text = slice_from("Click me");
+    arena->values[0].next = -1;
 
-//     prop_arena[0] = (Prop) {
-//         .key = slice_from("onClick"),
-//         .value = slice_from("() => alert(\"hi\")"),
-//         .type = EXPR_PROP_TYPE,
-//         .next = NULL
-//     };
+    arena->props[0] = (Prop) {
+        .key = slice_from("onClick"),
+        .value = slice_from("() => alert(\"hi\")"),
+        .type = EXPR_PROP_TYPE,
+        .next = -1
+    };
 
-//     children_arena[1].type = NODE_NODE_TYPE;
-//     children_arena[1].value.node = (Node) {
-//         .Tag = slice_from("button"),
-//         .Props = &prop_arena[0],
-//         .Children = &children_arena[0]
-//     };
-//     children_arena[1].next = NULL;
+    arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].value.node = (Node) {
+        .Tag = slice_from("button"),
+        .Props = 0,
+        .Children = 0
+    };
+    arena->values[1].next = -1;
 
-//     return &children_arena[1].value.node;
-// }
+    return 1;
+}
 
-// Node* gen_paragraph(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2) return NULL;
-//     children_arena[0].type = TEXT_NODE_TYPE;
-//     children_arena[0].value.text = slice_from("Hello world, this is JSX!");
-//     children_arena[0].next = NULL;
+#define GEN_PARAGRAPH_INPUT "<p>Hello world, this is JSX!</p>"
+ValueIndex GEN_PARAGRAPH_FN(Arena* arena) {
+    if (arena->values_capacity < 2) return 0;
+    arena->values[0].type = TEXT_NODE_TYPE;
+    arena->values[0].value.text = slice_from("Hello world, this is JSX!");
+    arena->values[0].next = -1;
 
-//     children_arena[1].type = NODE_NODE_TYPE;
-//     children_arena[1].value.node = (Node) {
-//         .Tag = slice_from("p"),
-//         .Props = NULL,
-//         .Children = &children_arena[0]
-//     };
-//     children_arena[1].next = NULL;
+    arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].value.node = (Node) {
+        .Tag = slice_from("p"),
+        .Props = -1,
+        .Children = 0
+    };
+    arena->values[1].next = -1;
 
-//     return &children_arena[1].value.node;
-// }
+    return 1;
+}
 
-// Node* gen_span_expr(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2) return NULL;
-//     children_arena[0].type = EXPR_NODE_TYPE;
-//     children_arena[0].value.expr = slice_from("user.name + {count}");
-//     children_arena[0].next = NULL;
+#define GEN_SPAN_EXPR_INPUT "<span>{user.name + {count}}</span>"
+ValueIndex GEN_SPAN_EXPR_FN(Arena* arena) {
+    if (arena->values_capacity < 2) return 0;
+    arena->values[0].type = EXPR_NODE_TYPE;
+    arena->values[0].value.expr = slice_from("user.name + {count}");
+    arena->values[0].next = -1;
 
-//     children_arena[1].type = NODE_NODE_TYPE;
-//     children_arena[1].value.node = (Node) {
-//         .Tag = slice_from("span"),
-//         .Props = NULL,
-//         .Children = &children_arena[0]
-//     };
-//     children_arena[1].next = NULL;
+    arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].value.node = (Node) {
+        .Tag = slice_from("span"),
+        .Props = -1,
+        .Children = 0
+    };
+    arena->values[1].next = -1;
 
-//     return &children_arena[1].value.node;
-// }
+    return 1;
+}
 
-// Node* gen_multiline_text(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 2) return NULL;
-//     children_arena[0].type = TEXT_NODE_TYPE;
-//     children_arena[0].value.text = slice_from("\n    Multi-line\n    text content\n");
-//     children_arena[0].next = NULL;
+#define GEN_MULTILINE_TEXT_INPUT "<div>\n    Multi-line\n    text content\n</div>"
+ValueIndex GEN_MULTILINE_TEXT_FN(Arena* arena) {
+    if (arena->values_capacity < 2) return 0;
+    arena->values[0].type = TEXT_NODE_TYPE;
+    arena->values[0].value.text = slice_from("\n    Multi-line\n    text content\n");
+    arena->values[0].next = -1;
 
-//     children_arena[1].type = NODE_NODE_TYPE;
-//     children_arena[1].value.node = (Node) {
-//         .Tag = slice_from("div"),
-//         .Props = NULL,
-//         .Children = &children_arena[0]
-//     };
-//     children_arena[1].next = NULL;
+    arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].value.node = (Node) {
+        .Tag = slice_from("div"),
+        .Props = -1,
+        .Children = 0
+    };
+    arena->values[1].next = -1;
 
-//     return &children_arena[1].value.node;
-// }
+    return 1;
+}
 
-// Node* gen_div_key_expr(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (prop_len < 1) return NULL;
-//     prop_arena[0] = (Prop) {
-//         .key = slice_from("key"),
-//         .value = slice_from("\"x\" + n"),
-//         .type = EXPR_PROP_TYPE,
-//         .next = NULL
-//     };
-//     children_arena[0].type = NODE_NODE_TYPE;
-//     children_arena[0].value.node = (Node) {
-//         .Tag = slice_from("div"),
-//         .Props = &prop_arena[0],
-//         .Children = NULL
-//     };
-//     children_arena[0].next = NULL;
+#define GEN_DIV_KEY_EXPR_INPUT "<div key={\"x\" + n}></div>"
+ValueIndex GEN_DIV_KEY_EXPR_FN(Arena* arena) {
+    if (arena->prop_capacity < 1) return 0;
+    arena->props[0] = (Prop) {
+        .key = slice_from("key"),
+        .value = slice_from("\"x\" + n"),
+        .type = EXPR_PROP_TYPE,
+        .next = -1
+    };
+    arena->values[0].type = NODE_NODE_TYPE;
+    arena->values[0].value.node = (Node) {
+        .Tag = slice_from("div"),
+        .Props = 0,
+        .Children = -1
+    };
+    arena->values[0].next = -1;
 
-//     return &children_arena[0].value.node;
-// }
-//
+    return 0;
+}
+
 
 #define GEN_BLOCK(name)              \
     {                                \
@@ -273,43 +289,15 @@ ValueIndex GEN_MULTIPLE_NODES_FN(Arena* arena) {
 void test_parser() {
     ParserTestCase tests[] = {
         GEN_BLOCK(SIMPLE_TEXT),
-        // GEN_BLOCK(MULTIPLE_NODES),
-        // {
-        //     .input = "<div><a></a><b></b></div>",
-        //     .gen_expected = gen_multiple_nodes,
-        // },
-        // {
-        //     .input = "<button disabled>press</button>",
-        //     .gen_expected = gen_button_disabled,
-        // },
-        // {
-        //     .input = "<button class=\"btn\">press</button>",
-        //     .gen_expected = gen_button_class,
-        // },
-        // {
-        //     .input = "<span onClick={handleClick}>X</span>",
-        //     .gen_expected = gen_span_onClick,
-        // },
-        // {
-        //     .input = "<button onClick={() => alert(\"hi\")}>Click me</button>",
-        //     .gen_expected = gen_button_onClick,
-        // },
-        // {
-        //     .input = "<p>Hello world, this is JSX!</p>",
-        //     .gen_expected = gen_paragraph,
-        // },
-        // {
-        //     .input = "<span>{user.name + {count}}</span>",
-        //     .gen_expected = gen_span_expr,
-        // },
-        // {
-        //     .input = "<div>\n    Multi-line\n    text content\n</div>",
-        //     .gen_expected = gen_multiline_text,
-        // },
-        // {
-        //     .input = "<div key={\"x\" + n}></div>",
-        //     .gen_expected = gen_div_key_expr,
-        // }
+        GEN_BLOCK(MULTIPLE_NODES),
+        GEN_BLOCK(BUTTON_DISABLED),
+        GEN_BLOCK(BUTTON_CLASS),
+        GEN_BLOCK(SPAN_ONCLICK),
+        GEN_BLOCK(BUTTON_ONCLICK),
+        GEN_BLOCK(PARAGRAPH),
+        GEN_BLOCK(SPAN_EXPR),
+        GEN_BLOCK(MULTILINE_TEXT),
+        GEN_BLOCK(DIV_KEY_EXPR),
     };
 
     int test_count = sizeof(tests) / sizeof(tests[0]);

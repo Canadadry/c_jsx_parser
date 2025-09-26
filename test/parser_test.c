@@ -1,5 +1,7 @@
 #include "../src/parser.h"
 #include "minitest.h"
+#include "realloc_test.h"
+
 
 #define BUF_CAPACITY 512
 #define ARENA_SIZE 10
@@ -10,6 +12,77 @@ typedef struct {
 } ParserTestCase;
 
 static inline void test_parser_case(ParserTestCase tt) {
+    Arena arena ={0};
+    arena.realloc_fn =fn_realloc;
+    Lexer lexer = NewLexer(slice_from(tt.input));
+    Parser parser = (Parser){0};
+    parser.lexer =&lexer;
+    parser.arena=&arena;
+    InitParser(&parser);
+
+    ParseNodeResult result = ParseNode(&parser);
+    if (result.type != OK) {
+        TEST_ERRORF("test_parser_case","parsing %s failed at %d %s : %.*s got %s\n",
+            tt.input,result.value.err.at,parser_error_to_string(result.value.err.code),
+            5,tt.input+result.value.err.at,token_type_to_string(result.value.err.token)
+        );
+        if(arena.values != NULL){
+            free(arena.values);
+        }
+        if(arena.props != NULL){
+            free(arena.props);
+        }
+        return;
+    }
+    ValueIndex actual_idx =result.value.ok;
+
+    Arena expected_arena ={0};
+    Value expected_values[ARENA_SIZE]={0};
+    expected_arena.values = expected_values;
+    expected_arena.values_capacity = ARENA_SIZE;
+    Prop expected_props[ARENA_SIZE]={0};
+    expected_arena.props = expected_props;
+    expected_arena.prop_capacity = ARENA_SIZE;
+
+    ValueIndex expected_idx = tt.gen_expected(&expected_arena);
+    if(expected_idx<0){
+        TEST_ERRORF("test_parser_case", "cannot generate expected node\n");
+        if(arena.values != NULL){
+            free(arena.values);
+        }
+        if(arena.props != NULL){
+            free(arena.props);
+        }
+        return;
+    }
+
+    if (!value_equal(&arena,actual_idx, &expected_arena,expected_idx)) {
+        Buffer exptected_buffer ={0};
+        char exptected_buf[BUF_CAPACITY] ={0};
+        exptected_buffer.buf=exptected_buf;
+        exptected_buffer.buf_capacity=BUF_CAPACITY;
+        value_print(&exptected_buffer, &expected_arena,expected_idx, 0);
+
+        Buffer got_buffer ={0};
+        char got_buf[BUF_CAPACITY] ={0};
+        got_buffer.buf=got_buf;
+        got_buffer.buf_capacity=BUF_CAPACITY;
+        value_print(&got_buffer, &arena,actual_idx, 0);
+
+        TEST_ERRORF("test_parser_case",
+            "parsing %s failed:\nexpected node:\n%s\ngot node:\n%s\n",
+            tt.input,exptected_buf,got_buf);
+    }
+
+    if(arena.values != NULL){
+        free(arena.values);
+    }
+    if(arena.props != NULL){
+        free(arena.props);
+    }
+}
+
+static inline void test_parser_case_realloc(ParserTestCase tt) {
     Arena arena ={0};
     Value values_arena[ARENA_SIZE] = {0};
     arena.values = values_arena;
@@ -318,7 +391,9 @@ void test_parser() {
 
     int test_count = sizeof(tests) / sizeof(tests[0]);
     for (int i = 0; i < test_count; i++) {
-        mt_total++;
         test_parser_case(tests[i]);
+        mt_total++;
+        test_parser_case_realloc(tests[i]);
+        mt_total++;
     }
 }

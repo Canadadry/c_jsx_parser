@@ -3,9 +3,6 @@
 #include "ast.h"
 #include "lexer.h"
 #include "token.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 const char* parser_error_to_string(ParseErrorCode err){
     switch(err){
@@ -34,7 +31,6 @@ static void parser_next_token(Parser* p) {
     p->peekTok = GetNextToken(p->lexer);
 }
 
-
 typedef struct {
     ResultType type;
     union {
@@ -43,7 +39,6 @@ typedef struct {
     } value;
 } PropsResults;
 
-
 static inline PropsResults parse_props(Parser* p) {
     PropsResults result = {0};
     result.type=OK;
@@ -51,22 +46,21 @@ static inline PropsResults parse_props(Parser* p) {
 
     while (p->curTok.type == TOKEN_IDENT) {
         PropIndex prop_index = get_next_prop(p->arena);
-        Prop* prop = &p->arena->props[prop_index];
-        prop->next=-1;
-        prop->key = p->curTok.literal;
-        prop->value = slice_from("true");
-        prop->type = EXPR_PROP_TYPE;
+        p->arena->props[prop_index].next=-1;
+        p->arena->props[prop_index].key = p->curTok.literal;
+        p->arena->props[prop_index].value = slice_from("true");
+        p->arena->props[prop_index].type = EXPR_PROP_TYPE;
         parser_next_token(p);
 
         if (p->curTok.type == TOKEN_EQUAL) {
             parser_next_token(p);
             if (p->curTok.type == TOKEN_STRING) {
-                prop->value = p->curTok.literal;
-                prop->type = TEXT_PROP_TYPE;
+                p->arena->props[prop_index].value = p->curTok.literal;
+                p->arena->props[prop_index].type = TEXT_PROP_TYPE;
                 parser_next_token(p);
             } else if (p->curTok.type == TOKEN_EXPR) {
-                prop->value = p->curTok.literal;
-                prop->type = EXPR_PROP_TYPE;
+                p->arena->props[prop_index].value = p->curTok.literal;
+                p->arena->props[prop_index].type = EXPR_PROP_TYPE;
                 parser_next_token(p);
             } else {
                 result.type = ERR;
@@ -76,7 +70,7 @@ static inline PropsResults parse_props(Parser* p) {
                 return result;
             }
         }
-        prop->next=result.value.ok;
+        p->arena->props[prop_index].next=result.value.ok;
         result.value.ok=prop_index;
     }
 
@@ -125,17 +119,16 @@ static inline ChildrenResults parse_children(Parser* p) {
 
     while (p->curTok.type != TOKEN_OPEN_TAG || (p->curTok.type == TOKEN_OPEN_TAG && p->peekTok.type != TOKEN_SLASH)) {
         ValueIndex child_index =  get_next_value(p->arena);
-        Value* child =  &p->arena->values[child_index];
-        child->next=-1;
+        p->arena->values[child_index].next=-1;
         switch (p->curTok.type) {
             case TOKEN_TEXT:
-                child->type = TEXT_NODE_TYPE;
-                child->value.text= p->curTok.literal;
+                p->arena->values[child_index].type = TEXT_NODE_TYPE;
+                p->arena->values[child_index].value.text= p->curTok.literal;
                 parser_next_token(p);
                 break;
             case TOKEN_EXPR:
-                child->type = EXPR_NODE_TYPE;
-                child->value.text= p->curTok.literal;
+                p->arena->values[child_index].type = EXPR_NODE_TYPE;
+                p->arena->values[child_index].value.text= p->curTok.literal;
                 parser_next_token(p);
                 break;
             case TOKEN_OPEN_TAG: {
@@ -150,7 +143,7 @@ static inline ChildrenResults parse_children(Parser* p) {
                 set_error(&result,PARSER_ERR_CHILDREN_UNEXPECTED_TOKEN,p->curTok.pos,p->curTok.type);
                 return result;
         }
-        child->next=result.value.ok;
+        p->arena->values[child_index].next=result.value.ok;
         result.value.ok=child_index;
     }
     result.value.ok=reverse_children(p->arena,result.value.ok);
@@ -179,15 +172,13 @@ static inline Error parse_closing_tag(Parser* p,Slice tag){
 }
 
 Error parse_child_node(Parser* p,ValueIndex child_idx) {
-    Value* child = &p->arena->values[child_idx];
-    child->type = NODE_NODE_TYPE;
-    Node* node= &child->value.node;
-    node->Children=-1;
-    node->Props=-1;
-
-    if (node == NULL){
+    if (child_idx <0){
         return (Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};
     }
+    p->arena->values[child_idx].type = NODE_NODE_TYPE;
+    p->arena->values[child_idx].value.node.Children=-1;
+    p->arena->values[child_idx].value.node.Props=-1;
+
 
     if (p->curTok.type != TOKEN_OPEN_TAG) {
         return (Error){.code=PARSER_ERR_EXPECTED_OPENTAG,.at=p->curTok.pos,.token=p->curTok.type};
@@ -197,7 +188,7 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
     if (p->curTok.type != TOKEN_IDENT) {
         return (Error){.code=PARSER_ERR_EXPECTED_OPENTAG_NAME,.at=p->curTok.pos,.token=p->curTok.type};
     }
-    node->Tag = p->curTok.literal;
+    p->arena->values[child_idx].value.node.Tag = p->curTok.literal;
     // printf("start tag(%d) %.*s\n",node->Tag.len,node->Tag.len,node->Tag.start);
     parser_next_token(p);
 
@@ -205,7 +196,7 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
     if (props_result.type == ERR){
         return props_result.value.err;
     }
-    node->Props = props_result.value.ok;
+    p->arena->values[child_idx].value.node.Props = props_result.value.ok;
 
     if (p->curTok.type == TOKEN_SLASH && p->peekTok.type == TOKEN_CLOSE_TAG) {
         parser_next_token(p);
@@ -222,15 +213,14 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
     if (children_result.type == ERR){
         return children_result.value.err;
     }
-    node->Children = children_result.value.ok;
+    p->arena->values[child_idx].value.node.Children = children_result.value.ok;
 
-    return parse_closing_tag(p,node->Tag);
+    return parse_closing_tag(p,p->arena->values[child_idx].value.node.Tag);
 }
 
 ParseNodeResult ParseNode(Parser* p) {
     ValueIndex child_idx =  get_next_value(p->arena);
-    Value* child = &p->arena->values[child_idx];
-    child->next = -1;
+    p->arena->values[child_idx].next = -1;
     ParseNodeResult result = {0};
     result.type=OK;
     result.value.ok=child_idx;

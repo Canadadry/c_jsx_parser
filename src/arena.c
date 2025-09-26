@@ -62,29 +62,35 @@ bool value_equal(Arena* arena_a,ValueIndex idx_a,Arena* arena_b,ValueIndex idx_b
 
     if (val_a->type != val_b->type) return false;
 
-    if (val_a->type == EXPR_NODE_TYPE || val_a->type==TEXT_NODE_TYPE) {
-        return slice_equal(val_a->value.expr, val_b->value.expr) != 0;
+    if (val_a->type == EXPR_NODE_TYPE) {
+        return slice_equal(val_a->value.expr, val_b->value.expr);
+    }
+    if (val_a->type==TEXT_NODE_TYPE) {
+        return slice_equal(val_a->value.text, val_b->value.text);
     }
 
     Node* a = &val_a->value.node;
-    Node* b = &val_a->value.node;
+    Node* b = &val_b->value.node;
 
-    if (slice_equal(a->Tag, b->Tag) != 0) return false;
+    if (!slice_equal(a->Tag, b->Tag)) return false;
 
-    PropIndex prop_a = a->Props;
-    PropIndex prop_b = b->Props;
-    SAFE_WHILE (prop_a>=0 && prop_b>=0,arena_a->prop_count) { //TODO fix prop_a not init at -1
-        if (slice_equal(arena_a->props[prop_a].key, arena_a->props[prop_b].key ) != 0 ||
-            slice_equal(arena_b->props[prop_a].value, arena_b->props[prop_b].value) != 0) {
+    PropIndex prop_a_idx = a->Props;
+    PropIndex prop_b_idx = b->Props;
+    SAFE_WHILE (prop_a_idx>=0 && prop_b_idx>=0,arena_a->prop_count) { //TODO fix prop_a not init at -1
+        Prop prop_a = arena_a->props[prop_a_idx];
+        Prop prop_b = arena_b->props[prop_b_idx];
+
+        if (!slice_equal(prop_a.key, prop_b.key ) ||
+            !slice_equal(prop_a.value,prop_b.value)) {
             return false;
         }
-        if (arena_a->props[prop_a].type != arena_b->props[prop_b].type){
+        if (prop_a.type != prop_b.type){
             return false;
         }
-        prop_a = arena_a->props[prop_a].next;
-        prop_b = arena_b->props[prop_b].next;
+        prop_a_idx = prop_a.next;
+        prop_b_idx = prop_b.next;
     }
-    if (prop_a || prop_b) return false;
+    if (prop_a_idx != prop_b_idx) return false;
 
 
     ValueIndex child_a_idx = a->Children;
@@ -96,6 +102,7 @@ bool value_equal(Arena* arena_a,ValueIndex idx_a,Arena* arena_b,ValueIndex idx_b
         child_a_idx = arena_a->values[child_a_idx].next;
         child_b_idx = arena_b->values[child_b_idx].next;
     }
+    if (child_a_idx != child_b_idx) return false;
 
     return true;
 }
@@ -145,9 +152,24 @@ static void write_indent(Printer* p,int indent){
 }
 
 void value_print(Printer* p,Arena* arena,ValueIndex index,int indent) {
-    if(index <=0 || index >= arena->prop_count || arena->values[index].type != NODE_NODE_TYPE){
+    if(index < 0 || index >= arena->values_count){
         return;
     }
+
+    if (arena->values[index].type == EXPR_NODE_TYPE) {
+        write_indent(p,indent+1);
+        write_slice(p,arena->values[index].value.expr);
+        write_string(p,"\n");
+        return;
+    }
+
+    if (arena->values[index].type == TEXT_NODE_TYPE) {
+        write_indent(p,indent+1);
+        write_slice(p,arena->values[index].value.text);
+        write_string(p,"\n");
+        return;
+    }
+
     Node* node = &arena->values[index].value.node;
     write_indent(p,indent);
     write_char(p,'<');
@@ -170,17 +192,10 @@ void value_print(Printer* p,Arena* arena,ValueIndex index,int indent) {
     }
     write_string(p,">\n");
 
-
     if (node->Children >= 0) {
         ValueIndex child = node->Children;
         SAFE_WHILE (child >= 0,arena->values_count) {
-            if (arena->values[child].type == NODE_NODE_TYPE) {
-                value_print(p,arena,child,indent+1);
-            } else {
-                write_indent(p,indent+1);
-                write_slice(p,arena->values[child].value.expr);
-                write_string(p,"\n");
-            }
+            value_print(p,arena,child,indent+1);
             child = arena->values[child].next;
         }
     }

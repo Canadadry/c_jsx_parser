@@ -59,9 +59,9 @@ void test_done(void) {
     _test_fatalf(__func__, name, fmt, ##__VA_ARGS__)
 
 #define TEST_GROUP(fn) do {               \
-    int before_failed = mt_failed;        \
+    if (mt_failed>0) { break;}            \
     fn();                                 \
-    if (mt_failed == before_failed) {     \
+    if (mt_failed == 0 ) {                \
         printf("[ OK ] %s\n", #fn);       \
     } else {                              \
        printf("[ FAILED ] %s\n", #fn);    \

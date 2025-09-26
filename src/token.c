@@ -1,4 +1,5 @@
 #include "token.h"
+#include <stdbool.h>
 #include <string.h>
 
 Slice slice_from(const char* str){
@@ -8,9 +9,9 @@ Slice slice_from(const char* str){
     };
 }
 
-int slice_equal(Slice left, Slice right){
-    if (left.len != right.len) return 1;
-    return strncmp(left.start, right.start, left.len);
+bool slice_equal(Slice left, Slice right){
+    if (left.len != right.len) return false;
+    return strncmp(left.start, right.start, left.len) == 0 ;
 }
 
 

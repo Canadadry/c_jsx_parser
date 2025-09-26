@@ -29,7 +29,7 @@ int parser_grow_prop(Arena* a){
 }
 
 ValueIndex get_next_value(Arena* a){
-    if(a->values_count <= a->values_capacity){
+    if(a->values_count >= a->values_capacity){
         int ok = parser_grow_values(a);
         if(ok==0){
             return  -1;
@@ -40,7 +40,7 @@ ValueIndex get_next_value(Arena* a){
 }
 
 PropIndex get_next_prop(Arena* a){
-    if(a->prop_count <= a->prop_capacity){
+    if(a->prop_count >= a->prop_capacity){
        int ok = parser_grow_prop(a);
         if(ok==0){
             return  -1;
@@ -73,7 +73,7 @@ bool value_equal(Arena* arena_a,ValueIndex idx_a,Arena* arena_b,ValueIndex idx_b
 
     PropIndex prop_a = a->Props;
     PropIndex prop_b = b->Props;
-    while (prop_a>=0 && prop_b>=0) { //TODO fix prop_a not init at -1
+    SAFE_WHILE (prop_a>=0 && prop_b>=0,arena_a->prop_count) { //TODO fix prop_a not init at -1
         if (slice_equal(arena_a->props[prop_a].key, arena_a->props[prop_b].key ) != 0 ||
             slice_equal(arena_b->props[prop_a].value, arena_b->props[prop_b].value) != 0) {
             return false;
@@ -89,7 +89,7 @@ bool value_equal(Arena* arena_a,ValueIndex idx_a,Arena* arena_b,ValueIndex idx_b
 
     ValueIndex child_a_idx = a->Children;
     ValueIndex child_b_idx = b->Children;
-    while (child_a_idx >= 0 && child_b_idx >= 0) { //TODO fix child_a_idx not init at -1
+    SAFE_WHILE (child_a_idx >= 0 && child_b_idx >= 0,arena_a->values_count) { //TODO fix child_a_idx not init at -1
         if(!value_equal(arena_a,  child_a_idx,arena_b, child_b_idx)){
             return false;
         }
@@ -154,7 +154,7 @@ void value_print(Printer* p,Arena* arena,ValueIndex index,int indent) {
     write_slice(p,node->Tag);
     if (node->Props >= 0) {
         PropIndex prop = node->Props;
-        while (prop >= 0) {
+        SAFE_WHILE (prop >= 0,arena->prop_count) {
             write_string(p," ");
             write_slice(p,arena->props[prop].key);
             write_string(p," = ");
@@ -173,7 +173,7 @@ void value_print(Printer* p,Arena* arena,ValueIndex index,int indent) {
 
     if (node->Children >= 0) {
         ValueIndex child = node->Children;
-        while (child >= 0) {
+        SAFE_WHILE (child >= 0,arena->values_count) {
             if (arena->values[child].type == NODE_NODE_TYPE) {
                 value_print(p,arena,child,indent+1);
             } else {

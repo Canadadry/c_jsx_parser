@@ -43,5 +43,7 @@ typedef struct Value{
     ValueIndex next;
 } Value;
 
+#define SAFE_WHILE(cond, max_iters) \
+    for (int _sw_guard = 0; (cond) && _sw_guard < (max_iters); _sw_guard++)
 
 #endif

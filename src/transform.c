@@ -81,7 +81,7 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
             write_string(t, "\"");
         }
         PropIndex p_idx = p->next;
-        while(p_idx>=0){
+        SAFE_WHILE(p_idx>=0,arena->prop_count){
             p= &arena->props[p_idx];
             write_string(t, ", ");
             write_slice(t, p->key);
@@ -99,7 +99,7 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
     }
 
     ValueIndex child_idx =node->Children;
-    while(child_idx>=0){
+    SAFE_WHILE(child_idx>=0,arena->values_count){
         Value* c = &arena->values[child_idx];
         write_string(t, ", ");
         switch(c->type){

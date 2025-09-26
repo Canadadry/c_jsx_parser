@@ -1,6 +1,7 @@
 #include "arena_test.h"
 #include "minitest.h"
 #include "../src/arena.h"
+#include "../src/buffer.h"
 
 #define BUF_CAPACITY 512
 
@@ -18,17 +19,17 @@ void testcase_value_equal(TestCase* tt){
     if(match != tt->should_match){
         TEST_ERRORF(tt->name, "expect %d got %d",tt->should_match,match);
 
-        Printer left_printer ={0};
+        Buffer left_buffer ={0};
         char left_buf[BUF_CAPACITY] ={0};
-        left_printer.buf=left_buf;
-        left_printer.buf_capacity=BUF_CAPACITY;
-        value_print(&left_printer, &tt->left,tt->left_head, 0);
+        left_buffer.buf=left_buf;
+        left_buffer.buf_capacity=BUF_CAPACITY;
+        value_print(&left_buffer, &tt->left,tt->left_head, 0);
 
-        Printer right_printer ={0};
+        Buffer right_buffer ={0};
         char right_buf[BUF_CAPACITY] ={0};
-        right_printer.buf=right_buf;
-        right_printer.buf_capacity=BUF_CAPACITY;
-        value_print(&right_printer, &tt->right,tt->right_head, 0);
+        right_buffer.buf=right_buf;
+        right_buffer.buf_capacity=BUF_CAPACITY;
+        value_print(&right_buffer, &tt->right,tt->right_head, 0);
 
         TEST_ERRORF(tt->name,"left node \n%s\nright node \n%s",left_buf,right_buf);
     }

@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "../src/parser.h"
 #include "minitest.h"
 
@@ -28,7 +25,10 @@ static inline void test_parser_case(ParserTestCase tt) {
 
     ParseNodeResult result = ParseNode(&parser);
     if (result.type != OK) {
-        TEST_ERRORF("test_parser_case","parsing %s failed: %d\n", tt.input,result.value.err);
+        TEST_ERRORF("test_parser_case","parsing %s failed at %d %s : %.*s got %s\n",
+            tt.input,result.value.err.at,parser_error_to_string(result.value.err.code),
+            5,tt.input+result.value.err.at,token_type_to_string(result.value.err.token)
+        );
     }
     ValueIndex actual_idx =result.value.ok;
 
@@ -46,17 +46,17 @@ static inline void test_parser_case(ParserTestCase tt) {
     }
 
     if (!value_equal(&arena,actual_idx, &expected_arena,expected_idx)) {
-        Printer exptected_printer ={0};
+        Buffer exptected_buffer ={0};
         char exptected_buf[BUF_CAPACITY] ={0};
-        exptected_printer.buf=exptected_buf;
-        exptected_printer.buf_capacity=BUF_CAPACITY;
-        value_print(&exptected_printer, &expected_arena,expected_idx, 0);
+        exptected_buffer.buf=exptected_buf;
+        exptected_buffer.buf_capacity=BUF_CAPACITY;
+        value_print(&exptected_buffer, &expected_arena,expected_idx, 0);
 
-        Printer got_printer ={0};
+        Buffer got_buffer ={0};
         char got_buf[BUF_CAPACITY] ={0};
-        got_printer.buf=got_buf;
-        got_printer.buf_capacity=BUF_CAPACITY;
-        value_print(&got_printer, &arena,actual_idx, 0);
+        got_buffer.buf=got_buf;
+        got_buffer.buf_capacity=BUF_CAPACITY;
+        value_print(&got_buffer, &arena,actual_idx, 0);
 
         TEST_ERRORF("test_parser_case",
             "parsing %s failed:\nexpected node:\n%s\ngot node:\n%s\n",
@@ -80,29 +80,30 @@ ValueIndex GEN_SIMPLE_TEXT_FN(Arena* arena) {
     return 0;
 }
 
-// Node* gen_multiple_nodes(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
-//     if (children_len < 3) return NULL;
-//     children_arena[0].type = NODE_NODE_TYPE;
-//     children_arena[0].value.node = (Node) {
-//         .Tag = slice_from("div"),
-//         .Props = NULL,
-//         .Children = &children_arena[1]
-//     };
-//     children_arena[1].type = NODE_NODE_TYPE;
-//     children_arena[1].value.node = (Node) {
-//         .Tag = slice_from("a"),
-//         .Props = NULL,
-//         .Children = NULL
-//     };
-//     children_arena[1].next = &children_arena[2];
-//     children_arena[2].type = NODE_NODE_TYPE;
-//     children_arena[2].value.node = (Node) {
-//         .Tag = slice_from("b"),
-//         .Props = NULL,
-//         .Children = NULL
-//     };
-//     return &children_arena[0].value.node;
-// }
+#define GEN_MULTIPLE_NODES_INPUT "<div><a></a><b></b></div>"
+ValueIndex GEN_MULTIPLE_NODES_FN(Arena* arena) {
+    if (arena->values_capacity < 3) return -1;
+    arena->values[0].type = NODE_NODE_TYPE;
+    arena->values[0].next = -1;
+    arena->values[0].value.node = (Node) {
+        .Tag = slice_from("div"),
+        .Props = -1,
+        .Children = 1,
+    };
+    arena->values[1].type = NODE_NODE_TYPE;
+    arena->values[1].value.node = (Node) {
+        .Tag = slice_from("a"),
+        .Props = -1,
+        .Children = 2
+    };
+    arena->values[2].type = NODE_NODE_TYPE;
+    arena->values[2].value.node = (Node) {
+        .Tag = slice_from("b"),
+        .Props = -1,
+        .Children = -1
+    };
+    return 0;
+}
 
 // Node* gen_button_disabled(Child* children_arena, size_t children_len, Prop* prop_arena, size_t prop_len) {
 //     if (children_len < 2 || prop_len < 1) return NULL;
@@ -272,6 +273,7 @@ ValueIndex GEN_SIMPLE_TEXT_FN(Arena* arena) {
 void test_parser() {
     ParserTestCase tests[] = {
         GEN_BLOCK(SIMPLE_TEXT),
+        // GEN_BLOCK(MULTIPLE_NODES),
         // {
         //     .input = "<div><a></a><b></b></div>",
         //     .gen_expected = gen_multiple_nodes,

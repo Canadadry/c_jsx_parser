@@ -2,7 +2,7 @@
 #include "ast.h"
 #include "parser.h"
 #include <string.h>
-#include "token.h"
+#include "buffer.h"
 #include "transform.h"
 #include "segmenter.h"
 
@@ -83,24 +83,24 @@ SliceResult transform(Compiler* c,Slice content){
         return result;
     }
     #define BUF_CAPACITY 1024
-    Printer got_printer ={0};
+    Buffer got_buffer ={0};
     char got_buf[BUF_CAPACITY] ={0};
-    got_printer.buf=got_buf;
-    got_printer.buf_capacity=BUF_CAPACITY;
-    value_print(&got_printer,&c->arena, parse_result.value.ok, 0);
+    got_buffer.buf=got_buf;
+    got_buffer.buf_capacity=BUF_CAPACITY;
+    value_print(&got_buffer,&c->arena, parse_result.value.ok, 0);
 
     ValueIndex actual = parse_result.value.ok;
     Transformer transformer = {0};
     transformer.createElem=c->createElem;
-    transformer.buf=c->transform_buf;
-    transformer.buf_capacity=c->transform_buf_capacity;
-    transformer.realloc_fn=c->arena.realloc_fn;
-    transformer.userdata=c->arena.userdata;
+    transformer.buf.buf=c->transform_buf;
+    transformer.buf.buf_capacity=c->transform_buf_capacity;
+    transformer.buf.realloc_fn=c->arena.realloc_fn;
+    transformer.buf.userdata=c->arena.userdata;
     Transform(&transformer,&c->arena,actual);
-    c->transform_buf=transformer.buf;
-    c->transform_buf_capacity=transformer.buf_capacity;
+    c->transform_buf=transformer.buf.buf;
+    c->transform_buf_capacity=transformer.buf.buf_capacity;
 
-    result.value.ok = (Slice){.start=transformer.buf,.len=transformer.buf_count};
+    result.value.ok = (Slice){.start=transformer.buf.buf,.len=transformer.buf.buf_count};
 
     return result;
 }

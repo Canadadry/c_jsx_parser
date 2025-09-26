@@ -107,101 +107,63 @@ bool value_equal(Arena* arena_a,ValueIndex idx_a,Arena* arena_b,ValueIndex idx_b
     return true;
 }
 
-#define MIN(x,y) ((x)<(y)?(x):(y))
-
-static inline int transformer_grow_buf(Printer* p,size_t len){
-    if(p->buf_count+len <p->buf_capacity){
-        return 1;
-    }
-    if(p->realloc_fn == NULL){
-        return 0;
-    }
-    int next_capacity = MIN(2*p->buf_capacity,len);
-    p->buf = p->realloc_fn(p->userdata,p->buf,next_capacity);
-    if(p->buf == NULL){
-        return 0;
-    }
-    p->buf_capacity=next_capacity;
-    return 1;
-}
-
-static void write_slice(Printer* p,Slice str){
-    if(transformer_grow_buf(p,str.len)==0){
-        return;
-    }
-    memcpy(p->buf+p->buf_count, str.start,str.len);
-    p->buf_count+=str.len;
-}
-
-static void write_string(Printer* p,const char* str){
-    write_slice(p,slice_from(str));
-}
-
-static void write_char(Printer* p,char c){
-    if(transformer_grow_buf(p,1)==0){
-        return;
-    }
-    p->buf[p->buf_count]=c;
-    p->buf_count++;
-}
-
-static void write_indent(Printer* p,int indent){
+static void write_indent(Buffer* b,int indent){
     for (int i=0;i<indent;i++){
-        write_char(p,' ');
+        write_char(b,' ');
     }
 }
 
-void value_print(Printer* p,Arena* arena,ValueIndex index,int indent) {
+void value_print(Buffer* b,Arena* arena,ValueIndex index,int indent) {
     if(index < 0 || index >= arena->values_count){
         return;
     }
 
     if (arena->values[index].type == EXPR_NODE_TYPE) {
-        write_indent(p,indent+1);
-        write_slice(p,arena->values[index].value.expr);
-        write_string(p,"\n");
+        write_indent(b,indent+1);
+        write_slice(b,arena->values[index].value.expr);
+        write_string(b,"\n");
         return;
     }
 
     if (arena->values[index].type == TEXT_NODE_TYPE) {
-        write_indent(p,indent+1);
-        write_slice(p,arena->values[index].value.text);
-        write_string(p,"\n");
+        write_indent(b,indent+1);
+        write_slice(b,arena->values[index].value.text);
+        write_string(b,"\n");
         return;
     }
 
     Node* node = &arena->values[index].value.node;
-    write_indent(p,indent);
-    write_char(p,'<');
-    write_slice(p,node->Tag);
+    write_indent(b,indent);
+    write_char(b,'<');
+    write_slice(b,node->Tag);
     if (node->Props >= 0) {
         PropIndex prop = node->Props;
         SAFE_WHILE (prop >= 0,arena->prop_count) {
-            write_string(p," ");
-            write_slice(p,arena->props[prop].key);
-            write_string(p," = ");
+            write_string(b," ");
+            write_slice(b,arena->props[prop].key);
+            write_string(b," = ");
             if(arena->props[prop].type==EXPR_PROP_TYPE){
-                write_slice(p,arena->props[prop].value);
+                write_slice(b,arena->props[prop].value);
             }else if(arena->props[prop].type==TEXT_PROP_TYPE){
-                write_char(p,'"');
-                write_slice(p,arena->props[prop].value);
-                write_char(p,'"');
+                write_char(b,'"');
+                write_slice(b,arena->props[prop].value);
+                write_char(b,'"');
             }
             prop = arena->props[prop].next;
         }
     }
-    write_string(p,">\n");
+    write_string(b,">\n");
 
     if (node->Children >= 0) {
         ValueIndex child = node->Children;
         SAFE_WHILE (child >= 0,arena->values_count) {
-            value_print(p,arena,child,indent+1);
+            value_print(b,arena,child,indent+1);
             child = arena->values[child].next;
         }
     }
 
-    write_indent(p,indent);
-    write_string(p,"</");
-    write_slice(p,node->Tag);
-    write_string(p,">\n");
+    write_indent(b,indent);
+    write_string(b,"</");
+    write_slice(b,node->Tag);
+    write_string(b,">\n");
 }

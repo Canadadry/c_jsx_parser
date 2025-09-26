@@ -1,19 +1,4 @@
 #include "token.h"
-#include <stdbool.h>
-#include <string.h>
-
-Slice slice_from(const char* str){
-    return (Slice){
-        .start=str,
-        .len=strlen(str),
-    };
-}
-
-bool slice_equal(Slice left, Slice right){
-    if (left.len != right.len) return false;
-    return strncmp(left.start, right.start, left.len) == 0 ;
-}
-
 
 const char* token_type_to_string(TokenType type){
     switch(type){

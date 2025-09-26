@@ -2,6 +2,7 @@
 #define ARENA_H
 
 #include "ast.h"
+#include "buffer.h"
 
 typedef struct{
     ValueIndex root;
@@ -17,15 +18,7 @@ typedef struct{
 
 bool value_equal(Arena* arena_a,ValueIndex a,Arena* arena_b,ValueIndex b);
 
-typedef struct {
-    char* buf;
-    size_t buf_count;
-    size_t buf_capacity;
-    void* (*realloc_fn)(void* userdata,void* ptr, size_t size);
-    void* userdata;
-} Printer;
-
-void value_print(Printer* printer,Arena* arena,ValueIndex index,int indent);
+void value_print(Buffer* printer,Arena* arena,ValueIndex index,int indent);
 
 int parser_grow_values(Arena* p);
 int parser_grow_prop(Arena* p);

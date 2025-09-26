@@ -2,6 +2,7 @@
 #define JSX_TOKEN_H
 
 #include <stdbool.h>
+#include "slice.h"
 
 typedef enum {
     TOKEN_ILLEGAL,
@@ -18,13 +19,6 @@ typedef enum {
 
 const char* token_type_to_string(TokenType type);
 
-typedef struct{
-    const char* start;
-    int len;
-} Slice;
-
-Slice slice_from(const char* str);
-bool slice_equal(Slice left, Slice right);
 
 typedef struct {
     TokenType type;

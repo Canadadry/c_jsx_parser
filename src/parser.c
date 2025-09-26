@@ -101,6 +101,9 @@ static void set_error(ChildrenResults* result, ParseErrorCode err,int at,TokenTy
 Error parse_child_node(Parser* p,ValueIndex child) ;
 
 ValueIndex reverse_children(Arena* arena,ValueIndex head) {
+    if(head<0){
+        return head;
+    }
     ValueIndex prev = -1;
     ValueIndex current = head;
     ValueIndex next = -1;
@@ -117,6 +120,7 @@ ValueIndex reverse_children(Arena* arena,ValueIndex head) {
 static inline ChildrenResults parse_children(Parser* p) {
     ChildrenResults result={0};
     result.type=OK;
+    result.value.ok=-1;
 
     while (p->curTok.type != TOKEN_OPEN_TAG || (p->curTok.type == TOKEN_OPEN_TAG && p->peekTok.type != TOKEN_SLASH)) {
         ValueIndex child_index =  get_next_value(p->arena);
@@ -159,7 +163,7 @@ static inline Error parse_closing_tag(Parser* p,Slice tag){
     parser_next_token(p);
     parser_next_token(p);
 
-    if (p->curTok.type != TOKEN_IDENT || slice_equal(p->curTok.literal, tag) != 0) {
+    if (p->curTok.type != TOKEN_IDENT || !slice_equal(p->curTok.literal, tag)) {
 
         // printf("end tag dont match with (%d) %.*s\n",tag.len,tag.len,tag.start);
         // printf("got (%d) %.*s\n",p->curTok.literal.len,p->curTok.literal.len,p->curTok.literal.start);
@@ -177,6 +181,7 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
     Value* child = &p->arena->values[child_idx];
     child->type = NODE_NODE_TYPE;
     Node* node= &child->value.node;
+    node->Children=-1;
 
     if (node == NULL){
         return (Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};

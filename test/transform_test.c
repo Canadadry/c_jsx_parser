@@ -29,7 +29,7 @@ void test_transform_case(Slice in, Slice exp){
     }
 
     Transform(&transformer,&arena,result.value.ok);
-    if (slice_equal((Slice){.start=buf,.len=transformer.buf.buf_count}, exp) != 0) {
+    if (!slice_equal((Slice){.start=buf,.len=transformer.buf.buf_count}, exp)) {
         TEST_ERRORF("test_transform_case","Test failed for input: %s\nExp: -%s-\nGot: -%s-\n",
             in.start, exp.start, buf
         );

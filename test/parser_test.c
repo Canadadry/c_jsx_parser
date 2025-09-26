@@ -111,7 +111,9 @@ ValueIndex GEN_MULTIPLE_NODES_FN(Arena* arena) {
 
 #define GEN_BUTTON_DISABLED_INPUT "<button disabled>press</button>"
 ValueIndex GEN_BUTTON_DISABLED_FN(Arena* arena) {
-    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return -1;
+    arena->values_count=2;
+    arena->prop_count=1;
     arena->values[0].type = NODE_NODE_TYPE;
     arena->values[0].next = -1;
     arena->values[0].value.node = (Node) {
@@ -134,7 +136,9 @@ ValueIndex GEN_BUTTON_DISABLED_FN(Arena* arena) {
 
 #define GEN_BUTTON_CLASS_INPUT "<button class=\"btn\">press</button>"
 ValueIndex GEN_BUTTON_CLASS_FN(Arena* arena) {
-    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return -1;
+    arena->values_count=2;
+    arena->prop_count=1;
     arena->values[0].type = NODE_NODE_TYPE;
     arena->values[0].next = -1;
     arena->values[0].value.node = (Node) {
@@ -157,7 +161,9 @@ ValueIndex GEN_BUTTON_CLASS_FN(Arena* arena) {
 
 #define GEN_SPAN_ONCLICK_INPUT "<span onClick={handleClick}>X</span>"
 ValueIndex GEN_SPAN_ONCLICK_FN(Arena* arena) {
-    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return -1;
+    arena->values_count=2;
+    arena->prop_count=1;
     arena->values[0].type = TEXT_NODE_TYPE;
     arena->values[0].value.text = slice_from("X");
     arena->values[0].next = -1;
@@ -182,7 +188,9 @@ ValueIndex GEN_SPAN_ONCLICK_FN(Arena* arena) {
 
 #define GEN_BUTTON_ONCLICK_INPUT "<button onClick={() => alert(\"hi\")}>Click me</button>"
 ValueIndex GEN_BUTTON_ONCLICK_FN(Arena* arena) {
-    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return 0;
+    if (arena->values_capacity < 2 || arena->prop_capacity < 1) return -1;
+    arena->values_count=2;
+    arena->prop_count=1;
     arena->values[0].type = TEXT_NODE_TYPE;
     arena->values[0].value.text = slice_from("Click me");
     arena->values[0].next = -1;
@@ -207,7 +215,9 @@ ValueIndex GEN_BUTTON_ONCLICK_FN(Arena* arena) {
 
 #define GEN_PARAGRAPH_INPUT "<p>Hello world, this is JSX!</p>"
 ValueIndex GEN_PARAGRAPH_FN(Arena* arena) {
-    if (arena->values_capacity < 2) return 0;
+    if (arena->values_capacity < 2) return -1;
+    arena->values_count=2;
+    arena->prop_count=0;
     arena->values[0].type = TEXT_NODE_TYPE;
     arena->values[0].value.text = slice_from("Hello world, this is JSX!");
     arena->values[0].next = -1;
@@ -225,7 +235,9 @@ ValueIndex GEN_PARAGRAPH_FN(Arena* arena) {
 
 #define GEN_SPAN_EXPR_INPUT "<span>{user.name + {count}}</span>"
 ValueIndex GEN_SPAN_EXPR_FN(Arena* arena) {
-    if (arena->values_capacity < 2) return 0;
+    if (arena->values_capacity < 2) return -1;
+    arena->values_count=2;
+    arena->prop_count=0;
     arena->values[0].type = EXPR_NODE_TYPE;
     arena->values[0].value.expr = slice_from("user.name + {count}");
     arena->values[0].next = -1;
@@ -243,7 +255,9 @@ ValueIndex GEN_SPAN_EXPR_FN(Arena* arena) {
 
 #define GEN_MULTILINE_TEXT_INPUT "<div>\n    Multi-line\n    text content\n</div>"
 ValueIndex GEN_MULTILINE_TEXT_FN(Arena* arena) {
-    if (arena->values_capacity < 2) return 0;
+    if (arena->values_capacity < 2) return -1;
+    arena->values_count=2;
+    arena->prop_count=0;
     arena->values[0].type = TEXT_NODE_TYPE;
     arena->values[0].value.text = slice_from("\n    Multi-line\n    text content\n");
     arena->values[0].next = -1;
@@ -261,7 +275,9 @@ ValueIndex GEN_MULTILINE_TEXT_FN(Arena* arena) {
 
 #define GEN_DIV_KEY_EXPR_INPUT "<div key={\"x\" + n}></div>"
 ValueIndex GEN_DIV_KEY_EXPR_FN(Arena* arena) {
-    if (arena->prop_capacity < 1) return 0;
+    if (arena->prop_capacity < 1) return -1;
+    arena->values_count=1;
+    arena->prop_count=0;
     arena->props[0] = (Prop) {
         .key = slice_from("key"),
         .value = slice_from("\"x\" + n"),

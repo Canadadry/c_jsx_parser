@@ -1,3 +1,4 @@
+#include "buffer.h"
 #include "jsx.h"
 #include "parser.h"
 #include <stdio.h>
@@ -71,10 +72,11 @@ int main(int argc,char ** argv){
     }
     Compiler c = {0};
     c.createElem = slice_from("React.createElement(");
-    c.in_buf = fcontent;
-    c.in_buf_count = strlen(fcontent);
-    c.in_buf_capacity = strlen(fcontent);
     c.arena.realloc_fn =fn_realloc;
+    c.in.realloc_fn =fn_realloc;
+    c.out.realloc_fn =fn_realloc;
+    c.tmp.realloc_fn =fn_realloc;
+    write_string(&c.in, fcontent);
     CompileResult result = compile(&c);
     if (result.type != OK) {
         printf("compile jsx failed at %d : %s\n", result.value.err.at,parser_error_to_string(result.value.err.code));

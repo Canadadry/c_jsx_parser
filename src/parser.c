@@ -219,10 +219,15 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
 }
 
 ParseNodeResult ParseNode(Parser* p) {
-    ValueIndex child_idx =  get_next_value(p->arena);
-    p->arena->values[child_idx].next = -1;
     ParseNodeResult result = {0};
     result.type=OK;
+    ValueIndex child_idx =  get_next_value(p->arena);
+    if (child_idx<0){
+        result.type=ERR;
+        result.value.err=(Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};
+        return result;
+    }
+    p->arena->values[child_idx].next = -1;
     result.value.ok=child_idx;
     Error err = parse_child_node(p,child_idx);
     if (err.code!=PARSER_OK){

@@ -10,23 +10,16 @@
 void test_jsx_case(Slice in, Slice exp) {
     Compiler c = {0};
     c.createElem = slice_from("React.createElement(");;
-    char in_buf[BUF_CAPACITY] ={0};
-    c.in_buf = in_buf;
-    memcpy(c.in_buf, in.start, in.len);
-    c.in_buf_count = in.len;
-    c.in_buf_capacity = BUF_CAPACITY;
-    char out_buf[BUF_CAPACITY] ={0};
-    c.out_buf = out_buf;
-    c.out_buf_count = 0;
-    c.out_buf_capacity = BUF_CAPACITY;
-    char transform_buf[BUF_CAPACITY] ={0};
-    c.transform_buf = transform_buf;
-    c.transform_buf_capacity = BUF_CAPACITY;
-    Prop props_arena[ARENA_SIZE] = {0};
-    c.arena.props = props_arena;
+    c.in.buf = (char[BUF_CAPACITY]){0};
+    c.in.buf_capacity = BUF_CAPACITY;
+    write_slice(&c.in, in);
+    c.out.buf = (char[BUF_CAPACITY]){0};
+    c.out.buf_capacity = BUF_CAPACITY;
+    c.tmp.buf = (char[BUF_CAPACITY]){0};
+    c.tmp.buf_capacity = BUF_CAPACITY;
+    c.arena.props = (Prop[ARENA_SIZE]){0};
     c.arena.prop_capacity = ARENA_SIZE;
-    Value children_arena[ARENA_SIZE] = {0};
-    c.arena.values = children_arena;
+    c.arena.values = (Value[ARENA_SIZE]){0};
     c.arena.values_capacity = ARENA_SIZE;
 
     CompileResult result = compile(&c);
@@ -45,11 +38,10 @@ void test_jsx_case(Slice in, Slice exp) {
 void test_jsx_case_realloc(Slice in, Slice exp) {
     Compiler c = {0};
     c.createElem = slice_from("React.createElement(");;
-    c.in_buf = realloc(c.in_buf,in.len);
-    memcpy(c.in_buf, in.start, in.len);
-    c.in_buf_count = in.len;
-    c.in_buf_capacity = in.len;
-    c.arena.realloc_fn =fn_realloc;
+    c.in.realloc_fn =fn_realloc;
+    c.out.realloc_fn =fn_realloc;
+    c.tmp.realloc_fn =fn_realloc;
+    write_slice(&c.in,in);
 
     printf("test_jsx_case_realloc\n");
     CompileResult result = compile(&c);
@@ -66,9 +58,12 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
             result.value.ok.len, result.value.ok.start
         );
     }
-    free(c.in_buf);
-    if(c.out_buf!=NULL){
-        free(c.out_buf);
+    free(c.in.buf);
+    if(c.out.buf!=NULL){
+        free(c.out.buf);
+    }
+    if(c.tmp.buf!=NULL){
+        free(c.tmp.buf);
     }
     if(c.arena.values!=NULL){
         free(c.arena.values);

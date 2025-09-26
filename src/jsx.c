@@ -1,7 +1,6 @@
 #include "jsx.h"
 #include "ast.h"
 #include "parser.h"
-#include <string.h>
 #include "buffer.h"
 #include "transform.h"
 #include "segmenter.h"
@@ -14,54 +13,45 @@ typedef struct{
     } value;
 }SliceResult;
 
-void copy_slice(Compiler* c, char** dest,size_t *dest_size, size_t *dest_cap, Slice source);
 void swap_buffer(Compiler* c);
 SliceResult transform(Compiler* c,Slice content);
 
 CompileResult compile(Compiler* c){
+    if(c->max_iter<=0){
+        c->max_iter=100;
+    }
     CompileResult result ={0};
     result.type=OK;
 
-    while(1){
-        c->out_buf_count=0;
+    bool changed = true;
+    SAFE_WHILE(changed, c->max_iter){
+        changed=false;
+        buffer_clear(&c->out);
         Segmenter segmenter={0};
-        segmenter.src = (Slice){.start=c->in_buf,.len=c->in_buf_count};
-        int changed = 0;
+        segmenter.src = buffer_to_slice(&c->in);
 
-        while(1){
+        Segment got = {.type=JS};
+        SAFE_WHILE(got.type != END, c->max_iter){
             Segment got = get_next_segment(&segmenter);
-            if (got.type == END) {
-                break;
-            }
             if (got.type == JS) {
-                copy_slice(c,
-                    &c->out_buf,&c->out_buf_count,&c->out_buf_capacity,
-                    got.content
-                );
+                write_slice(&c->out, got.content);
             }
             if (got.type == JSX) {
                 SliceResult r = transform(c,got.content);
                 if(r.type==ERR){
                     result.type=ERR;
                     result.value.err=r.value.err;
-                    result.value.err.at += got.content.start - c->in_buf;
+                    result.value.err.at += got.content.start - c->in.buf;
                     return result;
                 }
-                changed = 1;
-
-                copy_slice(c,
-                    &c->out_buf,&c->out_buf_count,&c->out_buf_capacity,
-                    r.value.ok
-                );
-
+                changed = true;
+                write_slice(&c->out, r.value.ok);
             }
-        }
-        if(changed==0){
-            result.value.ok = (Slice){.start=c->out_buf,.len=c->out_buf_count};
-            return result;
         }
         swap_buffer(c);
     }
+    result.value.ok = buffer_to_slice(&c->out);
+    return result;
 }
 
 SliceResult transform(Compiler* c,Slice content){
@@ -92,13 +82,13 @@ SliceResult transform(Compiler* c,Slice content){
     ValueIndex actual = parse_result.value.ok;
     Transformer transformer = {0};
     transformer.createElem=c->createElem;
-    transformer.buf.buf=c->transform_buf;
-    transformer.buf.buf_capacity=c->transform_buf_capacity;
+    transformer.buf.buf=c->tmp.buf;
+    transformer.buf.buf_capacity=c->tmp.buf_capacity;
     transformer.buf.realloc_fn=c->arena.realloc_fn;
     transformer.buf.userdata=c->arena.userdata;
     Transform(&transformer,&c->arena,actual);
-    c->transform_buf=transformer.buf.buf;
-    c->transform_buf_capacity=transformer.buf.buf_capacity;
+    c->tmp.buf=transformer.buf.buf;
+    c->tmp.buf_capacity=transformer.buf.buf_capacity;
 
     result.value.ok = (Slice){.start=transformer.buf.buf,.len=transformer.buf.buf_count};
 
@@ -106,23 +96,13 @@ SliceResult transform(Compiler* c,Slice content){
 }
 
 void swap_buffer(Compiler* c){
-    char* tmp_buf = c->out_buf;
-    c->out_buf=c->in_buf;
-    c->in_buf=tmp_buf;
-    size_t tmp_buf_cap = c->out_buf_capacity;
-    c->out_buf_capacity=c->in_buf_capacity;
-    c->in_buf_capacity=tmp_buf_cap;
-    size_t tmp_buf_count = c->out_buf_count;
-    c->out_buf_count=c->in_buf_count;
-    c->in_buf_count=tmp_buf_count;
-}
-
-void copy_slice(Compiler* c, char** dest,size_t *dest_size, size_t *dest_cap, Slice source){
-    while (*dest_size + source.len >= *dest_cap) {
-        if (*dest_cap == 0) *dest_cap = source.len+1;
-        else *dest_cap *= 2;
-        *dest = c->arena.realloc_fn(c->arena.userdata,*dest,*dest_cap);
-    }
-    memcpy(*dest + *dest_size, source.start, source.len);
-    *dest_size+=source.len;
+    char* tmp_buf = c->out.buf;
+    c->out.buf=c->in.buf;
+    c->in.buf=tmp_buf;
+    size_t tmp_buf_cap = c->out.buf_capacity;
+    c->out.buf_capacity=c->in.buf_capacity;
+    c->in.buf_capacity=tmp_buf_cap;
+    size_t tmp_buf_count = c->out.buf_count;
+    c->out.buf_count=c->in.buf_count;
+    c->in.buf_count=tmp_buf_count;
 }

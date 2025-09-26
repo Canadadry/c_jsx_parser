@@ -6,7 +6,13 @@ int parser_grow_values(Arena* a){
     if(a->realloc_fn == NULL){
         return 0;
     }
-    int next_capacity = (a->values_capacity*2)+1;
+    int next_capacity = a->values_capacity;
+    if(next_capacity==0){
+        next_capacity=1;
+    }
+    while(a->values_count+1 >= next_capacity){
+        next_capacity = 2*next_capacity;
+    }
     a->values = a->realloc_fn(a->userdata,a->values,next_capacity*sizeof(Value));
     if(a->values == NULL){
         return 0;
@@ -19,7 +25,13 @@ int parser_grow_prop(Arena* a){
     if(a->realloc_fn == NULL){
         return 0;
     }
-    int next_capacity = (a->prop_capacity*2)+1;
+    int next_capacity = a->prop_capacity;
+    if(next_capacity==0){
+        next_capacity=1;
+    }
+    while(a->prop_count+1 >= next_capacity){
+        next_capacity = 2*next_capacity;
+    }
     a->props = a->realloc_fn(a->userdata,a->props,next_capacity*sizeof(Prop));
     if(a->props == NULL){
         return 0;

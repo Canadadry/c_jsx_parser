@@ -12,8 +12,10 @@ typedef struct {
     void* userdata;
 } Buffer;
 
-void write_slice(Buffer* p,Slice str);
-void write_string(Buffer* p,const char* str);
-void write_char(Buffer* p,char c);
+void write_slice(Buffer* b,Slice str);
+void write_string(Buffer* b,const char* str);
+void write_char(Buffer* b,char c);
+void buffer_clear(Buffer* b);
+Slice buffer_to_slice(Buffer* b);
 
 #endif

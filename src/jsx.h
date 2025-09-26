@@ -1,6 +1,7 @@
 #ifndef JSX_H
 #define JSX_H
 
+#include "buffer.h"
 #include "parser.h"
 
 typedef struct {
@@ -12,15 +13,11 @@ typedef struct {
 } CompileResult;
 
 typedef struct{
+    int max_iter;
     Slice createElem;
-    char*  in_buf;
-    size_t in_buf_count;
-    size_t in_buf_capacity;
-    char*  out_buf;
-    size_t out_buf_count;
-    size_t out_buf_capacity;
-    char*  transform_buf;
-    size_t transform_buf_capacity;
+    Buffer in;
+    Buffer out;
+    Buffer tmp;
     Arena arena;
 } Compiler;
 

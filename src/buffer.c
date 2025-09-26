@@ -15,7 +15,7 @@ static inline bool grow_buf(Buffer* b,size_t len){
         next_capacity=1;
     }
     while(b->buf_count+len >= next_capacity){
-        next_capacity = MIN(2*b->buf_capacity,len);
+        next_capacity = 2*next_capacity;
     }
     b->buf = b->realloc_fn(b->userdata,b->buf,next_capacity);
     if(b->buf == NULL){
@@ -43,4 +43,13 @@ static inline bool grow_buf(Buffer* b,size_t len){
     }
     b->buf[b->buf_count]=c;
     b->buf_count++;
+}
+
+
+void buffer_clear(Buffer* b){
+    b->buf_count=0;
+}
+
+Slice buffer_to_slice(Buffer* b){
+    return (Slice){.start=b->buf,.len=b->buf_count};
 }

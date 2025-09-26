@@ -41,9 +41,9 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
     c.in.realloc_fn =fn_realloc;
     c.out.realloc_fn =fn_realloc;
     c.tmp.realloc_fn =fn_realloc;
+    c.arena.realloc_fn=fn_realloc;
     write_slice(&c.in,in);
 
-    printf("test_jsx_case_realloc\n");
     CompileResult result = compile(&c);
     if (result.type != OK) {
         TEST_ERRORF("test_jsx_case","compile %.*s failed at %d %s : %.*s, got %s\n",

@@ -25,7 +25,7 @@ void test_segment_case(SegmentCase tt) {
             break;
         }
 
-        if (slice_equal(got.content, tt.exp[i].content) != 0) {
+        if (!slice_equal(got.content, tt.exp[i].content)) {
             TEST_ERRORF(tt.name, "expected content at segment %d: \n-%.*s-\n, got: \n-%.*s-\n", i,
                 tt.exp[i].content.len ,  tt.exp[i].content.start,
                 got.content.len ,  got.content.start

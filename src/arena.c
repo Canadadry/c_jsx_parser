@@ -50,15 +50,15 @@ PropIndex get_next_prop(Arena* a){
     return a->prop_count-1;
 }
 
-bool value_equal(Arena* arena,ValueIndex idx_a,ValueIndex idx_b){
+bool value_equal(Arena* arena_a,ValueIndex idx_a,Arena* arena_b,ValueIndex idx_b){
     if (
-            idx_a < 0 || idx_a >= arena->values_count
-        ||  idx_b < 0 || idx_b >= arena->values_count
+            idx_a < 0 || idx_a >= arena_a->values_count
+        ||  idx_b < 0 || idx_b >= arena_b->values_count
     ) {
         return false;
     }
-    Value* val_a = arena->values+idx_a;
-    Value* val_b = arena->values+idx_b;
+    Value* val_a = arena_a->values+idx_a;
+    Value* val_b = arena_b->values+idx_b;
 
     if (val_a->type != val_b->type) return false;
 
@@ -74,15 +74,15 @@ bool value_equal(Arena* arena,ValueIndex idx_a,ValueIndex idx_b){
     PropIndex prop_a = a->Props;
     PropIndex prop_b = b->Props;
     while (prop_a>=0 && prop_b>=0) { //TODO fix prop_a not init at -1
-        if (slice_equal(arena->props[prop_a].key, arena->props[prop_b].key ) != 0 ||
-            slice_equal(arena->props[prop_a].value, arena->props[prop_b].value) != 0) {
+        if (slice_equal(arena_a->props[prop_a].key, arena_a->props[prop_b].key ) != 0 ||
+            slice_equal(arena_b->props[prop_a].value, arena_b->props[prop_b].value) != 0) {
             return false;
         }
-        if (arena->props[prop_a].type != arena->props[prop_b].type){
+        if (arena_a->props[prop_a].type != arena_b->props[prop_b].type){
             return false;
         }
-        prop_a = arena->props[prop_a].next;
-        prop_b = arena->props[prop_b].next;
+        prop_a = arena_a->props[prop_a].next;
+        prop_b = arena_b->props[prop_b].next;
     }
     if (prop_a || prop_b) return false;
 
@@ -90,11 +90,11 @@ bool value_equal(Arena* arena,ValueIndex idx_a,ValueIndex idx_b){
     ValueIndex child_a_idx = a->Children;
     ValueIndex child_b_idx = b->Children;
     while (child_a_idx >= 0 && child_b_idx >= 0) { //TODO fix child_a_idx not init at -1
-        if(!value_equal(arena,  child_a_idx, child_b_idx)){
+        if(!value_equal(arena_a,  child_a_idx,arena_b, child_b_idx)){
             return false;
         }
-        child_a_idx = arena->values[child_a_idx].next;
-        child_b_idx = arena->values[child_b_idx].next;
+        child_a_idx = arena_a->values[child_a_idx].next;
+        child_b_idx = arena_b->values[child_b_idx].next;
     }
 
     return true;

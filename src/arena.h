@@ -15,7 +15,7 @@ typedef struct{
     void* userdata;
 } Arena;
 
-bool value_equal(Arena* arena,ValueIndex a,ValueIndex b);
+bool value_equal(Arena* arena_a,ValueIndex a,Arena* arena_b,ValueIndex b);
 
 typedef struct {
     char* buf;

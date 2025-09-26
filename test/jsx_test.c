@@ -42,11 +42,11 @@ void test_jsx_case(Slice in, Slice exp) {
     c.transform_buf = transform_buf;
     c.transform_buf_capacity = BUF_CAPACITY;
     Prop props_arena[ARENA_SIZE] = {0};
-    c.props = props_arena;
-    c.prop_capacity = ARENA_SIZE;
-    Child children_arena[ARENA_SIZE] = {0};
-    c.children = children_arena;
-    c.child_capacity = ARENA_SIZE;
+    c.arena.props = props_arena;
+    c.arena.prop_capacity = ARENA_SIZE;
+    Value children_arena[ARENA_SIZE] = {0};
+    c.arena.values = children_arena;
+    c.arena.values_capacity = ARENA_SIZE;
 
     CompileResult result = compile(&c);
     if (result.type != OK) {
@@ -74,7 +74,7 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
     memcpy(c.in_buf, in.start, in.len);
     c.in_buf_count = in.len;
     c.in_buf_capacity = in.len;
-    c.realloc_fn =fn_realloc;
+    c.arena.realloc_fn =fn_realloc;
 
     printf("test_jsx_case_realloc\n");
     CompileResult result = compile(&c);
@@ -95,11 +95,11 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
     if(c.out_buf!=NULL){
         free(c.out_buf);
     }
-    if(c.children!=NULL){
-        free(c.children);
+    if(c.arena.values!=NULL){
+        free(c.arena.values);
     }
-    if(c.props!=NULL){
-        free(c.props);
+    if(c.arena.props!=NULL){
+        free(c.arena.props);
     }
 }
 

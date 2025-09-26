@@ -5,15 +5,17 @@
 #define BUF_CAPACITY 512
 
 void test_transform_case(Slice in, Slice exp){
+    Arena arena = {0};
+    Value children_arena[ARENA_SIZE] = {0};
+    arena.values = children_arena;
+    arena.values_capacity = ARENA_SIZE;
+    Prop     props_arena[ARENA_SIZE] = {0};
+    arena.props = props_arena;
+    arena.prop_capacity = ARENA_SIZE;
     Lexer lexer = NewLexer(in);
     Parser parser = {0};
     parser.lexer=&lexer;
-    Child children_arena[ARENA_SIZE] = {0};
-    parser.children = children_arena;
-    parser.child_capacity = ARENA_SIZE;
-    Prop     props_arena[ARENA_SIZE] = {0};
-    parser.props = props_arena;
-    parser.prop_capacity = ARENA_SIZE;
+    parser.arena=&arena;
     Transformer transformer = {0};
     char buf[BUF_CAPACITY] ={0};
     transformer.createElem=slice_from("React.createElement(");
@@ -25,9 +27,8 @@ void test_transform_case(Slice in, Slice exp){
     if (result.type != OK) {
         TEST_ERRORF("test_transform_case","parsing %s failed: %d\n", in.start,result.value.err);
     }
-    Node* actual = result.value.ok;
 
-    Transform(&transformer,actual);
+    Transform(&transformer,&arena,result.value.ok);
     if (slice_equal((Slice){.start=buf,.len=transformer.buf_count}, exp) != 0) {
         TEST_ERRORF("test_transform_case","Test failed for input: %s\nExp: -%s-\nGot: -%s-\n",
             in.start, exp.start, buf

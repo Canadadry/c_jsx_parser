@@ -20,39 +20,40 @@ void test_jsx_case(Slice in, Slice exp) {
     c.arena.values = (Value[ARENA_SIZE]){0};
     c.arena.values_capacity = ARENA_SIZE;
 
-    CompileResult result = compile(&c,in);
-    if (result.type != OK) {
-        TEST_ERRORF("test_jsx_case","compile %s failed at %d : %s\n", in.start,result.value.err.at,parser_error_to_string(result.value.err.code));
+    bool ok= jsx_compile(&c,in.start,in.len);
+    if (!ok) {
+        TEST_ERRORF("test_jsx_case","compile %s  %s\n", in.start,jsx_get_last_error(&c));
+        return;
     }
-    if (!slice_equal(result.value.ok, exp)) {
+    Slice result = slice_from(jsx_get_output(&c));
+    if (!slice_equal(result,exp)) {
         TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
             in.len,in.start,
             exp.len,exp.start,
-            result.value.ok.len, result.value.ok.start
+            result.len, result.start
         );
     }
 }
 
 void test_jsx_case_realloc(Slice in, Slice exp) {
-    Compiler* c = new_compiler("React.createElement(", (Allocator){
+    Compiler* c = jsx_new_compiler("React.createElement(", (Allocator){
         .realloc_fn=fn_realloc,
         .free_fn=fn_free,
     });
-    CompileResult result = compile(c,in);
-    if (result.type != OK) {
-        TEST_ERRORF("test_jsx_case","compile %.*s failed at %d %s : %.*s, got %s\n",
-            in.len,in.start,result.value.err.at,parser_error_to_string(result.value.err.code),
-            10,in.start+result.value.err.at-5,token_type_to_string(result.value.err.token)
-        );
+    bool ok= jsx_compile(c,in.start,in.len);
+    if (!ok) {
+        TEST_ERRORF("test_jsx_case","compile %s  %s\n", in.start,jsx_get_last_error(c));
+    }else{
+        Slice result = slice_from(jsx_get_output(c));
+        if (!slice_equal(result,exp)) {
+            TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
+                in.len,in.start,
+                exp.len,exp.start,
+                result.len, result.start
+            );
+        }
     }
-    if (result.type == OK && !slice_equal(result.value.ok, exp)) {
-        TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
-            in.len,in.start,
-            exp.len,exp.start,
-            result.value.ok.len, result.value.ok.start
-        );
-    }
-    free_compiler(c);
+    jsx_free_compiler(c);
 }
 
 

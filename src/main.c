@@ -1,6 +1,4 @@
-#include "buffer.h"
 #include "jsx.h"
-#include "parser.h"
 #include "slice.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,18 +73,18 @@ int main(int argc,char ** argv){
     if(fcontent==NULL){
         return 1;
     }
-    Compiler* c = new_compiler("React.createElement(", (Allocator){
+    Compiler* c = jsx_new_compiler("React.createElement(", (Allocator){
         .realloc_fn=fn_realloc,
         .free_fn=fn_free,
     });
-    CompileResult result = compile(c,slice_from(fcontent));
-    if (result.type != OK) {
-        printf("compile jsx failed at %d : %s\n", result.value.err.at,parser_error_to_string(result.value.err.code));
-        free_compiler(c);
+    bool ok = jsx_compile(c,fcontent,0);
+    if (!ok) {
+        printf("compile jsx failed at%s\n", jsx_get_last_error(c));
+        jsx_free_compiler(c);
         return 1;
     }else{
-        printf("%.*s\n",result.value.ok.len,result.value.ok.start);
-        free_compiler(c);
+        printf("%s\n",jsx_get_output(c));
+        jsx_free_compiler(c);
         return 0;
     }
 }

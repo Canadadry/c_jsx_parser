@@ -20,11 +20,13 @@ typedef struct{
     Buffer out;
     Buffer tmp;
     Arena arena;
+    CompileResult last;
 } Compiler;
 
-Compiler* new_compiler(const char* createElem,Allocator allocator);
-void free_compiler(Compiler* c);
-// Compiler static_memory_compiler(const char* createElem);
-CompileResult compile(Compiler* c,Slice in );
+Compiler* jsx_new_compiler(const char* createElem,Allocator allocator);
+void jsx_free_compiler(Compiler* c);
+bool jsx_compile(Compiler* c,const char* in,size_t len );
+char* jsx_get_last_error(Compiler* c);
+char* jsx_get_output(Compiler* c);
 
 #endif

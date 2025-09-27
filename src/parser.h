@@ -34,7 +34,7 @@ typedef struct{
 
 const char* parser_error_to_string(ParseErrorCode err);
 
-typedef enum{OK,ERR} ResultType;
+typedef enum{NONE,OK,ERR} ResultType;
 
 typedef struct {
     ResultType type;

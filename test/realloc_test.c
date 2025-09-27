@@ -28,3 +28,7 @@ void* fn_realloc(void* userdata,void* ptr, size_t size){
     // printf("allocating memory %lu\n",size);
     return realloc(ptr, size);
 }
+
+void fn_free(void* userdata,void* ptr){
+    free(ptr);
+}

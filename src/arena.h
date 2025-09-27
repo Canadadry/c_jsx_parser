@@ -3,6 +3,8 @@
 
 #include "ast.h"
 #include "buffer.h"
+#include "allocator.h"
+
 
 typedef struct{
     ValueIndex root;
@@ -12,8 +14,8 @@ typedef struct{
     Prop* props;
     size_t prop_count;
     size_t prop_capacity;
-    void* (*realloc_fn)(void* userdata,void* ptr, size_t size);
-    void* userdata;
+    Allocator allocator;
+
 } Arena;
 
 bool value_equal(Arena* arena_a,ValueIndex a,Arena* arena_b,ValueIndex b);

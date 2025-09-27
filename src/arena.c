@@ -3,7 +3,7 @@
 #include "string.h"
 
 int parser_grow_values(Arena* a){
-    if(a->realloc_fn == NULL){
+    if(a->allocator.realloc_fn == NULL){
         return 0;
     }
     int next_capacity = a->values_capacity;
@@ -13,7 +13,7 @@ int parser_grow_values(Arena* a){
     while(a->values_count+1 >= next_capacity){
         next_capacity = 2*next_capacity;
     }
-    a->values = a->realloc_fn(a->userdata,a->values,next_capacity*sizeof(Value));
+    a->values = a->allocator.realloc_fn(a->allocator.userdata,a->values,next_capacity*sizeof(Value));
     if(a->values == NULL){
         return 0;
     }
@@ -22,7 +22,7 @@ int parser_grow_values(Arena* a){
 }
 
 int parser_grow_prop(Arena* a){
-    if(a->realloc_fn == NULL){
+    if(a->allocator.realloc_fn == NULL){
         return 0;
     }
     int next_capacity = a->prop_capacity;
@@ -32,7 +32,7 @@ int parser_grow_prop(Arena* a){
     while(a->prop_count+1 >= next_capacity){
         next_capacity = 2*next_capacity;
     }
-    a->props = a->realloc_fn(a->userdata,a->props,next_capacity*sizeof(Prop));
+    a->props = a->allocator.realloc_fn(a->allocator.userdata,a->props,next_capacity*sizeof(Prop));
     if(a->props == NULL){
         return 0;
     }

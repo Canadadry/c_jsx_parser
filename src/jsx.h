@@ -1,6 +1,7 @@
 #ifndef JSX_H
 #define JSX_H
 
+#include "allocator.h"
 #include "buffer.h"
 #include "parser.h"
 
@@ -21,7 +22,9 @@ typedef struct{
     Arena arena;
 } Compiler;
 
-
-CompileResult compile(Compiler* c);
+Compiler* new_compiler(const char* createElem,Allocator allocator);
+void free_compiler(Compiler* c);
+// Compiler static_memory_compiler(const char* createElem);
+CompileResult compile(Compiler* c,Slice in );
 
 #endif

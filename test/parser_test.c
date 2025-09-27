@@ -13,7 +13,7 @@ typedef struct {
 
 static inline void test_parser_case(ParserTestCase tt) {
     Arena arena ={0};
-    arena.realloc_fn =fn_realloc;
+    arena.allocator.realloc_fn =fn_realloc;
     Lexer lexer = NewLexer(slice_from(tt.input));
     Parser parser = (Parser){0};
     parser.lexer =&lexer;

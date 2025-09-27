@@ -7,7 +7,7 @@ static inline bool grow_buf(Buffer* b,size_t len){
     if(b->buf_count+len <b->buf_capacity){
         return true;
     }
-    if(b->realloc_fn == NULL){
+    if(b->allocator.realloc_fn == NULL){
         return false;
     }
     int next_capacity = b->buf_capacity;
@@ -17,7 +17,7 @@ static inline bool grow_buf(Buffer* b,size_t len){
     while(b->buf_count+len >= next_capacity){
         next_capacity = 2*next_capacity;
     }
-    b->buf = b->realloc_fn(b->userdata,b->buf,next_capacity);
+    b->buf = b->allocator.realloc_fn(b->allocator.userdata,b->buf,next_capacity);
     if(b->buf == NULL){
         return false;
     }

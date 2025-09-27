@@ -1,7 +1,6 @@
 #include "jsx_test.h"
 #include "../src/jsx.h"
 #include "minitest.h"
-#include <string.h>
 #include "realloc_test.h"
 
 #define BUF_CAPACITY 2048
@@ -12,7 +11,6 @@ void test_jsx_case(Slice in, Slice exp) {
     c.createElem = slice_from("React.createElement(");;
     c.in.buf = (char[BUF_CAPACITY]){0};
     c.in.buf_capacity = BUF_CAPACITY;
-    write_slice(&c.in, in);
     c.out.buf = (char[BUF_CAPACITY]){0};
     c.out.buf_capacity = BUF_CAPACITY;
     c.tmp.buf = (char[BUF_CAPACITY]){0};
@@ -22,7 +20,7 @@ void test_jsx_case(Slice in, Slice exp) {
     c.arena.values = (Value[ARENA_SIZE]){0};
     c.arena.values_capacity = ARENA_SIZE;
 
-    CompileResult result = compile(&c);
+    CompileResult result = compile(&c,in);
     if (result.type != OK) {
         TEST_ERRORF("test_jsx_case","compile %s failed at %d : %s\n", in.start,result.value.err.at,parser_error_to_string(result.value.err.code));
     }
@@ -36,15 +34,11 @@ void test_jsx_case(Slice in, Slice exp) {
 }
 
 void test_jsx_case_realloc(Slice in, Slice exp) {
-    Compiler c = {0};
-    c.createElem = slice_from("React.createElement(");;
-    c.in.realloc_fn =fn_realloc;
-    c.out.realloc_fn =fn_realloc;
-    c.tmp.realloc_fn =fn_realloc;
-    c.arena.realloc_fn=fn_realloc;
-    write_slice(&c.in,in);
-
-    CompileResult result = compile(&c);
+    Compiler* c = new_compiler("React.createElement(", (Allocator){
+        .realloc_fn=fn_realloc,
+        .free_fn=fn_free,
+    });
+    CompileResult result = compile(c,in);
     if (result.type != OK) {
         TEST_ERRORF("test_jsx_case","compile %.*s failed at %d %s : %.*s, got %s\n",
             in.len,in.start,result.value.err.at,parser_error_to_string(result.value.err.code),
@@ -58,19 +52,7 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
             result.value.ok.len, result.value.ok.start
         );
     }
-    free(c.in.buf);
-    if(c.out.buf!=NULL){
-        free(c.out.buf);
-    }
-    if(c.tmp.buf!=NULL){
-        free(c.tmp.buf);
-    }
-    if(c.arena.values!=NULL){
-        free(c.arena.values);
-    }
-    if(c.arena.props!=NULL){
-        free(c.arena.props);
-    }
+    free_compiler(c);
 }
 
 

@@ -3,13 +3,13 @@
 
 #include "slice.h"
 #include <stdio.h>
+#include "allocator.h"
 
 typedef struct {
     char* buf;
     size_t buf_count;
     size_t buf_capacity;
-    void* (*realloc_fn)(void* userdata,void* ptr, size_t size);
-    void* userdata;
+    Allocator allocator;
 } Buffer;
 
 void write_slice(Buffer* b,Slice str);

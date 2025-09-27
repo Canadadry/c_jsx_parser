@@ -1,6 +1,7 @@
 #include "buffer.h"
 #include "jsx.h"
 #include "parser.h"
+#include "slice.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,6 +61,10 @@ void* fn_realloc(void* userdata,void* ptr, size_t size){
     return realloc(ptr, size);
 }
 
+void fn_free(void* userdata,void* ptr){
+    free(ptr);
+}
+
 int main(int argc,char ** argv){
     if(argc <=1){
         printf("usage: %s filename\n",argv[0]);
@@ -70,19 +75,18 @@ int main(int argc,char ** argv){
     if(fcontent==NULL){
         return 1;
     }
-    Compiler c = {0};
-    c.createElem = slice_from("React.createElement(");
-    c.arena.realloc_fn =fn_realloc;
-    c.in.realloc_fn =fn_realloc;
-    c.out.realloc_fn =fn_realloc;
-    c.tmp.realloc_fn =fn_realloc;
-    write_string(&c.in, fcontent);
-    CompileResult result = compile(&c);
+    Compiler* c = new_compiler("React.createElement(", (Allocator){
+        .realloc_fn=fn_realloc,
+        .free_fn=fn_free,
+    });
+    CompileResult result = compile(c,slice_from(fcontent));
     if (result.type != OK) {
         printf("compile jsx failed at %d : %s\n", result.value.err.at,parser_error_to_string(result.value.err.code));
+        free_compiler(c);
         return 1;
     }else{
         printf("%.*s\n",result.value.ok.len,result.value.ok.start);
+        free_compiler(c);
+        return 0;
     }
-    return 0;
 }

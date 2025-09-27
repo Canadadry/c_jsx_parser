@@ -1,9 +1,12 @@
 #include "jsx.h"
+#include "allocator.h"
 #include "ast.h"
 #include "parser.h"
 #include "buffer.h"
 #include "transform.h"
 #include "segmenter.h"
+
+#define MAX_ITER 100
 
 typedef struct{
     ResultType type;
@@ -16,10 +19,49 @@ typedef struct{
 void swap_buffer(Compiler* c);
 SliceResult transform(Compiler* c,Slice content);
 
-CompileResult compile(Compiler* c){
-    if(c->max_iter<=0){
-        c->max_iter=100;
+Compiler* new_compiler(const char* createElem,Allocator allocator){
+    Compiler* c =allocator.realloc_fn(allocator.userdata,NULL,sizeof(Compiler));
+    *c = (Compiler){0};
+    c->createElem = slice_from(createElem);
+    c->in.allocator =allocator;
+    c->out.allocator =allocator;
+    c->tmp.allocator =allocator;
+    c->arena.allocator=allocator;
+    return c;
+}
+
+void free_compiler(Compiler* c){
+    if(c->in.buf!=NULL && c->in.allocator.free_fn !=NULL){
+        c->in.allocator.free_fn(c->in.allocator.userdata,c->in.buf);
     }
+    if(c->out.buf!=NULL && c->out.allocator.free_fn !=NULL){
+        c->out.allocator.free_fn(c->out.allocator.userdata,c->out.buf);
+    }
+    if(c->tmp.buf!=NULL && c->tmp.allocator.free_fn !=NULL){
+        c->tmp.allocator.free_fn(c->tmp.allocator.userdata,c->tmp.buf);
+    }
+    if(c->arena.values!=NULL && c->arena.allocator.free_fn !=NULL){
+        c->arena.allocator.free_fn(c->arena.allocator.userdata,c->arena.values);
+    }
+    if(c->arena.props!=NULL && c->arena.allocator.free_fn !=NULL){
+        c->arena.allocator.free_fn(c->arena.allocator.userdata,c->arena.props);
+    }
+    if(c->in.allocator.free_fn !=NULL){
+        c->in.allocator.free_fn(c->in.allocator.userdata,c);
+    }
+}
+
+CompileResult compile(Compiler* c,Slice in ){
+    if(c->max_iter<=0){
+        c->max_iter=MAX_ITER;
+    }
+    c->in.buf_count=0;
+    c->out.buf_count=0;
+    c->tmp.buf_count=0;
+    c->arena.values_count=0;
+    c->arena.prop_count=0;
+    write_slice(&c->in,in);
+
     CompileResult result ={0};
     result.type=OK;
 
@@ -84,8 +126,7 @@ SliceResult transform(Compiler* c,Slice content){
     transformer.createElem=c->createElem;
     transformer.buf.buf=c->tmp.buf;
     transformer.buf.buf_capacity=c->tmp.buf_capacity;
-    transformer.buf.realloc_fn=c->arena.realloc_fn;
-    transformer.buf.userdata=c->arena.userdata;
+    transformer.buf.allocator=c->arena.allocator;
     Transform(&transformer,&c->arena,actual);
     c->tmp.buf=transformer.buf.buf;
     c->tmp.buf_capacity=transformer.buf.buf_capacity;

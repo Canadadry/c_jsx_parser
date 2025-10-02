@@ -37,6 +37,10 @@ static inline bool grow_buf(Buffer* b,size_t len){
     write_slice(b,slice_from(str));
 }
 
+void write_string_len(Buffer* b,const char* str,int len){
+   write_slice(b,(Slice){.start=str,.len=len});
+}
+
  void write_char(Buffer* b,char c){
     if(!grow_buf(b,1)){
         return;

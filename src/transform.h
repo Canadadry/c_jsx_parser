@@ -11,5 +11,6 @@ typedef struct {
 } Transformer;
 
 void Transform(Transformer* t,Arena* arena,ValueIndex node);
+void escape(Slice in,Buffer *buf);
 
 #endif

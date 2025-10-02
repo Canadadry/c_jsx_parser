@@ -77,15 +77,64 @@ void test_transform() {
             .in = "<button onClick={() => alert(\"hi\")}>press</button>",
             .exp = "React.createElement(\"button\", { onClick : () => alert(\"hi\") }, \"press\")"
         },
-        // {
-        //     .in = "<div key={\"x\" + n}>\n    {cond && <span>ok</span>}\n</div>",
-        //     .exp = "React.createElement(\"div\", { key : \"x\" + n }, \"\n    \", cond && React.createElement(\"span\", null, \"ok\"), \"\\n\")"
-        // }
+        {
+            .in = "<button onClick={() => alert(\"hi\")}>\n\tpress\n</button>",
+            .exp = "React.createElement(\"button\", { onClick : () => alert(\"hi\") }, \"\\n\tpress\\n\")"
+        },
     };
 
     int test_count = sizeof(cases) / sizeof(cases[0]);
     for (int i = 0; i < test_count; i++) {
         mt_total++;
         test_transform_case(slice_from(cases[i].in),slice_from(cases[i].exp));
+    }
+}
+
+
+void test_escape_case(Slice in, Slice exp){
+
+    char buf_content[BUF_CAPACITY] ={0};
+    Buffer buf = (Buffer){
+        .buf =buf_content,
+        .buf_count=0,
+        .buf_capacity=BUF_CAPACITY,
+        .allocator=(Allocator){},
+    };
+    escape(in,&buf);
+    Slice got = buffer_to_slice(&buf);
+    if (!slice_equal(got, exp)) {
+        TEST_ERRORF("test_escape_case","Test failed for input: %s\nExp: -%s-\nGot: -%s-\n",
+            in.start, exp.start, got.start
+        );
+    }
+}
+
+void test_escape() {
+    struct {
+        const char *in;
+        const char *exp;
+    } cases[] = {
+        {
+            .in = "no line return",
+            .exp = "no line return"
+        },
+        {
+            .in = "line return at the end \n",
+            .exp = "line return at the end \\n"
+        },
+        {
+            .in = "line return \n in the middle",
+            .exp = "line return \\n in the middle"
+        },
+        {
+            .in = "two line \n return in \n the middle",
+            .exp = "two line \\n return in \\n the middle"
+        },
+    };
+
+    int test_count = sizeof(cases) / sizeof(cases[0]);
+    for (int i = 0; i < test_count; i++) {
+        mt_total++;
+        test_escape_case(slice_from(cases[i].in),slice_from(cases[i].exp));
     }
 }

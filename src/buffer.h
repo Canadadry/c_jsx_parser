@@ -14,6 +14,7 @@ typedef struct {
 
 void write_slice(Buffer* b,Slice str);
 void write_string(Buffer* b,const char* str);
+void write_string_len(Buffer* b,const char* str,int len);
 void write_char(Buffer* b,char c);
 void buffer_clear(Buffer* b);
 Slice buffer_to_slice(Buffer* b);

@@ -59,7 +59,7 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
         switch(c->type){
             case TEXT_NODE_TYPE:
                 write_char(&t->buf, '"');
-                write_slice(&t->buf,c->value.text);
+                escape(c->value.text,&t->buf);
                 write_char(&t->buf, '"');
                 break;
             case EXPR_NODE_TYPE:
@@ -75,4 +75,22 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
 
 void Transform(Transformer* t,Arena* arena,ValueIndex node){
     genNode(t,arena,node);
+}
+
+void escape(Slice input, Buffer *buffer) {
+    size_t segment_start = 0;
+
+    for (size_t i = 0; i < input.len; i++) {
+        if (input.start[i] == '\n') {
+            if (i > segment_start) {
+                write_string_len(buffer, input.start + segment_start, i - segment_start);
+            }
+            write_string(buffer, "\\n");
+            segment_start = i + 1;
+        }
+    }
+
+    if (segment_start < input.len) {
+        write_string_len(buffer, input.start + segment_start, input.len - segment_start);
+    }
 }

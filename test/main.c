@@ -12,6 +12,7 @@ int main(int argc,char ** argv){
     TEST_GROUP(test_arena);
     TEST_GROUP(test_parser);
     TEST_GROUP(test_transform);
+    TEST_GROUP(test_escape);
     TEST_GROUP(test_segment);
     TEST_GROUP(test_jsx);
     test_done();

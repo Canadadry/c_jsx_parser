@@ -42,44 +42,48 @@ void test_transform() {
         const char *exp;
     } cases[] = {
         {
+            .in = "<div></div>",
+            .exp = "React.createElement(\"div\", null, [])"
+        },
+        {
             .in = "<div>ok</div>",
-            .exp = "React.createElement(\"div\", null, \"ok\")"
+            .exp = "React.createElement(\"div\", null, [\"ok\"])"
         },
         {
             .in = "<div className=\"x\">ok</div>",
-            .exp = "React.createElement(\"div\", { className : \"x\" }, \"ok\")"
+            .exp = "React.createElement(\"div\", { className : \"x\" }, [\"ok\"])"
         },
         {
             .in = "<button disabled>click</button>",
-            .exp = "React.createElement(\"button\", { disabled : true }, \"click\")"
+            .exp = "React.createElement(\"button\", { disabled : true }, [\"click\"])"
         },
         {
             .in = "<span>{user.name}</span>",
-            .exp = "React.createElement(\"span\", null, user.name)"
+            .exp = "React.createElement(\"span\", null, [user.name])"
         },
         {
             .in = "<ul><li>one</li><li>two</li></ul>",
-            .exp = "React.createElement(\"ul\", null, React.createElement(\"li\", null, \"one\"), React.createElement(\"li\", null, \"two\"))"
+            .exp = "React.createElement(\"ul\", null, [React.createElement(\"li\", null, [\"one\"]), React.createElement(\"li\", null, [\"two\"])])"
         },
         {
             .in = "<p>Hello {name}</p>",
-            .exp = "React.createElement(\"p\", null, \"Hello \", name)"
+            .exp = "React.createElement(\"p\", null, [\"Hello \", name])"
         },
         {
             .in = "<Button primary>Click</Button>",
-            .exp = "React.createElement(Button, { primary : true }, \"Click\")"
+            .exp = "React.createElement(Button, { primary : true }, [\"Click\"])"
         },
         {
             .in = "<button onClick={handleClick}>press</button>",
-            .exp = "React.createElement(\"button\", { onClick : handleClick }, \"press\")"
+            .exp = "React.createElement(\"button\", { onClick : handleClick }, [\"press\"])"
         },
         {
             .in = "<button onClick={() => alert(\"hi\")}>press</button>",
-            .exp = "React.createElement(\"button\", { onClick : () => alert(\"hi\") }, \"press\")"
+            .exp = "React.createElement(\"button\", { onClick : () => alert(\"hi\") }, [\"press\"])"
         },
         {
             .in = "<button onClick={() => alert(\"hi\")}>\n\tpress\n</button>",
-            .exp = "React.createElement(\"button\", { onClick : () => alert(\"hi\") }, \"\\n\tpress\\n\")"
+            .exp = "React.createElement(\"button\", { onClick : () => alert(\"hi\") }, [\"\\n\tpress\\n\"])"
         },
     };
 

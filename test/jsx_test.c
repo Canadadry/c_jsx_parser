@@ -79,9 +79,9 @@ void test_jsx() {
                 "    let name = \"Fernando\"\n"
                 "        let myClass = \"open\"\n"
                 "        return (\n"
-                "        React.createElement(\"div\", { ref : myRef, className : myClass, id : \"test\" }, \"\\n"
-                "        \", React.createElement(\"h1\", null, \"Hello \", name, \"!\"), \"\\n"
-                "    \")\n"
+                "        React.createElement(\"div\", { ref : myRef, className : myClass, id : \"test\" }, [\"\\n"
+                "        \", React.createElement(\"h1\", null, [\"Hello \", name, \"!\"]), \"\\n"
+                "    \"])\n"
                 "    )\n"
                 "}"),
         },

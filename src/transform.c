@@ -51,11 +51,13 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
         }
         write_string(&t->buf, " }");
     }
-
+    write_string(&t->buf, ", [");
     ValueIndex child_idx =node->Children;
     SAFE_WHILE(child_idx>=0,arena->values_count){
         Value* c = &arena->values[child_idx];
-        write_string(&t->buf, ", ");
+        if(child_idx!=node->Children){
+            write_string(&t->buf, ", ");
+        }
         switch(c->type){
             case TEXT_NODE_TYPE:
                 write_char(&t->buf, '"');
@@ -70,7 +72,7 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
         }
         child_idx=c->next;
     }
-    write_char(&t->buf,')');
+    write_string(&t->buf,"])");
 }
 
 void Transform(Transformer* t,Arena* arena,ValueIndex node){

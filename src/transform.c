@@ -8,16 +8,17 @@ static inline char isUpper(char ch) {
 
 void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
     Node* node = &arena->values[node_idx].value.node;
-    write_slice(&t->buf,t->createElem);
     if(isUpper(node->Tag.start[0])){
         write_slice(&t->buf,node->Tag);
+        write_char(&t->buf, '(');
     }else{
+        write_slice(&t->buf,t->createElem);
         write_char(&t->buf, '"');
         write_slice(&t->buf,node->Tag);
         write_char(&t->buf, '"');
+        write_string(&t->buf, ", ");
     }
 
-    write_string(&t->buf, ", ");
 
     if(node->Props<0){
         write_string(&t->buf, "null");

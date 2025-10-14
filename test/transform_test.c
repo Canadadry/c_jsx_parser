@@ -71,7 +71,15 @@ void test_transform() {
         },
         {
             .in = "<Button primary>Click</Button>",
-            .exp = "React.createElement(Button, { primary : true }, [\"Click\"])"
+            .exp = "Button({ primary : true }, [\"Click\"])"
+        },
+        {
+            .in = "<Button></Button>",
+            .exp = "Button(null, [])"
+        },
+        {
+            .in = "<Button>Click</Button>",
+            .exp = "Button(null, [\"Click\"])"
         },
         {
             .in = "<button onClick={handleClick}>press</button>",

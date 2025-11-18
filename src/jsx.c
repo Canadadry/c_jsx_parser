@@ -159,8 +159,12 @@ char* jsx_get_last_error(Compiler* c){
     }
     c->out.buf_count=0;
     write_string(&c->out,"compilation error at ");
-    char at[10]={0};
-    snprintf(at,10,"%d ",c->last.value.err.at);
+    char at[128]={0};
+    snprintf(at,128,"%d (%s:\"%.*s\") ",
+        c->last.value.err.at,
+        token_type_to_string(c->last.value.err.token),
+        c->last.value.err.litt.len,c->last.value.err.litt.start
+    );
     write_string(&c->out,at);
     write_string(&c->out," : ");
     write_string(&c->out,parser_error_to_string(c->last.value.err.code));

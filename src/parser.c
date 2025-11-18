@@ -85,14 +85,6 @@ typedef struct {
     } value;
 } ChildrenResults;
 
-static void set_error(ChildrenResults* result, ParseErrorCode err,int at,TokenType type){
-    result->type = ERR;
-    result->value.err.code = err;
-    result->value.err.token = type;
-    result->value.err.at=at;
-}
-
-
 Error parse_child_node(Parser* p,ValueIndex child) ;
 
 ValueIndex reverse_children(Arena* arena,ValueIndex head) {
@@ -140,7 +132,13 @@ static inline ChildrenResults parse_children(Parser* p) {
                 break;
             }
             default:
-                set_error(&result,PARSER_ERR_CHILDREN_UNEXPECTED_TOKEN,p->curTok.pos,p->curTok.type);
+                result.type = ERR;
+                result.value.err=(Error){
+                    .code=PARSER_ERR_CHILDREN_UNEXPECTED_TOKEN,
+                    .at=p->curTok.pos,
+                    .token=p->curTok.type,
+                    .litt=p->curTok.literal
+                };
                 return result;
         }
         p->arena->values[child_index].next=result.value.ok;
@@ -152,7 +150,12 @@ static inline ChildrenResults parse_children(Parser* p) {
 
 static inline Error parse_closing_tag(Parser* p,Slice tag){
     if (p->curTok.type != TOKEN_OPEN_TAG || p->peekTok.type != TOKEN_SLASH) {
-        return (Error){.code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_1,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_1,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     parser_next_token(p);
     parser_next_token(p);
@@ -161,11 +164,21 @@ static inline Error parse_closing_tag(Parser* p,Slice tag){
 
         // printf("end tag dont match with (%d) %.*s\n",tag.len,tag.len,tag.start);
         // printf("got (%d) %.*s\n",p->curTok.literal.len,p->curTok.literal.len,p->curTok.literal.start);
-        return (Error){.code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_2,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_2,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     parser_next_token(p);
     if (p->curTok.type != TOKEN_CLOSE_TAG) {
-        return (Error){.code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_3,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_CLOSING_UNEXPECTED_TOKEN_3,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     parser_next_token(p);
     return (Error){.code=PARSER_OK,.at=0};
@@ -173,7 +186,12 @@ static inline Error parse_closing_tag(Parser* p,Slice tag){
 
 Error parse_child_node(Parser* p,ValueIndex child_idx) {
     if (child_idx <0){
-        return (Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_MEMORY_ALLOCATION,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     p->arena->values[child_idx].type = NODE_NODE_TYPE;
     p->arena->values[child_idx].value.node.Children=-1;
@@ -181,12 +199,22 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
 
 
     if (p->curTok.type != TOKEN_OPEN_TAG) {
-        return (Error){.code=PARSER_ERR_EXPECTED_OPENTAG,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_EXPECTED_OPENTAG,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     parser_next_token(p);
 
     if (p->curTok.type != TOKEN_IDENT) {
-        return (Error){.code=PARSER_ERR_EXPECTED_OPENTAG_NAME,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_EXPECTED_OPENTAG_NAME,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     p->arena->values[child_idx].value.node.Tag = p->curTok.literal;
     // printf("start tag(%d) %.*s\n",node->Tag.len,node->Tag.len,node->Tag.start);
@@ -205,7 +233,12 @@ Error parse_child_node(Parser* p,ValueIndex child_idx) {
     }
 
     if (p->curTok.type != TOKEN_CLOSE_TAG) {
-        return (Error){.code=PARSER_ERR_EXPECTED_ENDTAG,.at=p->curTok.pos,.token=p->curTok.type};
+        return (Error){
+            .code=PARSER_ERR_EXPECTED_ENDTAG,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
     }
     parser_next_token(p);
 
@@ -224,7 +257,12 @@ ParseNodeResult ParseNode(Parser* p) {
     ValueIndex child_idx =  get_next_value(p->arena);
     if (child_idx<0){
         result.type=ERR;
-        result.value.err=(Error){.code=PARSER_ERR_MEMORY_ALLOCATION,.at=p->curTok.pos,.token=p->curTok.type};
+        result.value.err=(Error){
+            .code=PARSER_ERR_MEMORY_ALLOCATION,
+            .at=p->curTok.pos,
+            .token=p->curTok.type,
+            .litt=p->curTok.literal
+        };
         return result;
     }
     p->arena->values[child_idx].next = -1;

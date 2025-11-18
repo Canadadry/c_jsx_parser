@@ -245,22 +245,101 @@ void test_segment() {
                 },
             },
         },
+        {
+            .name="JS with < ",
+            .in="function render() {"
+            "  ClearBackground(\"#fff\");"
+            "  ui_clear();"
+            "  var root = ui_compute(<item w={200}>{"
+            "    Slider({ id: \"line\", name: \"test\", val: val })"
+            "  }</item>);"
+            "  ui_draw(root);"
+            ""
+            "  if(is_mouse_button_pressed(\"left\")){"
+            "    var node = ui_pick(get_mouse_x(), get_mouse_y());"
+            "    if(node==\"line-box\"){"
+            "      pressed = true;"
+            "    }"
+            "  }else if(is_mouse_button_released(\"left\")){"
+            "    pressed = false;"
+            "  }"
+            "  if(pressed){"
+            "    var b = ui_bb(\"line-box\");"
+            "    var local_x = get_mouse_x() - b.x;"
+            "    if (local_x < 0) { local_x = 0; }"
+            "    if (local_x > b.w) { local_x = b.w; }"
+            "    pos = local_x;"
+            "  }"
+            "}",
+            .exp=(Segment[]){
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(
+                        "function render() {"
+                        "  ClearBackground(\"#fff\");"
+                        "  ui_clear();"
+                        "  var root = ui_compute("
+                    ),
+                },
+                (Segment){
+                    .type=JSX,
+                    .content=slice_from(
+                        "<item w={200}>{"
+                        "    Slider({ id: \"line\", name: \"test\", val: val })"
+                        "  }</item>"
+                    ),
+                },
+                (Segment){
+                    .type=JS,
+                    .content=slice_from(
+                        ");"
+                        "  ui_draw(root);"
+                        ""
+                        "  if(is_mouse_button_pressed(\"left\")){"
+                        "    var node = ui_pick(get_mouse_x(), get_mouse_y());"
+                        "    if(node==\"line-box\"){"
+                        "      pressed = true;"
+                        "    }"
+                        "  }else if(is_mouse_button_released(\"left\")){"
+                        "    pressed = false;"
+                        "  }"
+                        "  if(pressed){"
+                        "    var b = ui_bb(\"line-box\");"
+                        "    var local_x = get_mouse_x() - b.x;"
+                        "    if (local_x < 0) { local_x = 0; }"
+                        "    if (local_x > b.w) { local_x = b.w; }"
+                        "    pos = local_x;"
+                        "  }"
+                        "}"
+                    ),
+                },
+                (Segment){
+                    .type=END,
+                }
+            }
+        }
 
         // {
-        //     .name="JSX with comments",
-        //     .in="const el = (<div><!-- Comment --><span>ok</span></div>);",
+        //     .name="JSX in line comments",
+        //     .in="//const el = (<div><span>ok</span></div>);",
         //     .exp=(Segment[]){
         //         (Segment){
         //             .type=JS,
-        //             .content=slice_from("const el = ("),
+        //             .content=slice_from("//const el = (<div><span>ok</span></div>);"),
         //         },
         //         (Segment){
-        //             .type=JSX,
-        //             .content=slice_from("<div><!-- Comment --><span>ok</span></div>"),
+        //             .type=END,
         //         },
+        //     },
+        // },
+
+        // {
+        //     .name="JSX in block comments",
+        //     .in="/*.const el = (<div><span>ok</span></div>); */",
+        //     .exp=(Segment[]){
         //         (Segment){
         //             .type=JS,
-        //             .content=slice_from(");"),
+        //             .content=slice_from("/*const el = (<div><span>ok</span></div>); */"),
         //         },
         //         (Segment){
         //             .type=END,

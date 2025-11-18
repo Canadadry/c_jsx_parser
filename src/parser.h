@@ -30,6 +30,7 @@ typedef struct{
     ParseErrorCode code;
     int at;
     TokenType token;
+    Slice litt;
 }Error;
 
 const char* parser_error_to_string(ParseErrorCode err);

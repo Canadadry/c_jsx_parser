@@ -25,6 +25,9 @@ void test_jsx_case(Slice in, Slice exp) {
         TEST_ERRORF("test_jsx_case","compile %s  %s\n", in.start,jsx_get_last_error(&c));
         return;
     }
+    if(exp.len==0){
+        return;
+    }
     Slice result = slice_from(jsx_get_output(&c));
     if (!slice_equal(result,exp)) {
         TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
@@ -44,13 +47,15 @@ void test_jsx_case_realloc(Slice in, Slice exp) {
     if (!ok) {
         TEST_ERRORF("test_jsx_case","compile %s  %s\n", in.start,jsx_get_last_error(c));
     }else{
-        Slice result = slice_from(jsx_get_output(c));
-        if (!slice_equal(result,exp)) {
-            TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
-                in.len,in.start,
-                exp.len,exp.start,
-                result.len, result.start
-            );
+        if(exp.len!=0){
+            Slice result = slice_from(jsx_get_output(c));
+            if (!slice_equal(result,exp)) {
+                TEST_ERRORF("test_jsx_case","compile failed for input: %.*s\n\nexpected: %.*s\n\ngot: %.*s\n",
+                    in.len,in.start,
+                    exp.len,exp.start,
+                    result.len, result.start
+                );
+            }
         }
     }
     jsx_free_compiler(c);
@@ -85,6 +90,64 @@ void test_jsx() {
                 "    )\n"
                 "}"),
         },
+        {
+            .in=slice_from(
+                "function render() {"
+                "  ClearBackground(\"#fff\");"
+                "  ui_clear();"
+                "  var root = ui_compute(<item w={200}>{"
+                "    Slider({ id: \"line\", name: \"test\", val: val })"
+                "  }</item>);"
+                "  ui_draw(root);"
+                ""
+                "  if(is_mouse_button_pressed(\"left\")){"
+                "    var node = ui_pick(get_mouse_x(), get_mouse_y());"
+                "    if(node==\"line-box\"){"
+                "      pressed = true;"
+                "    }"
+                "  }else if(is_mouse_button_released(\"left\")){"
+                "    pressed = false;"
+                "  }"
+                "  if(pressed){"
+                "    var b = ui_bb(\"line-box\");"
+                "    var local_x = get_mouse_x() - b.x;"
+                "    if (local_x < 0) { local_x = 0; }"
+                "    if (local_x > b.w) { local_x = b.w; }"
+                "    pos = local_x;"
+                "  }"
+                "}"
+            ),
+            .exp=slice_from(""),
+        },
+        {
+            .in=slice_from(
+                "function render() {"
+                "  ClearBackground(\"#fff\");"
+                "  ui_clear();"
+                "  var root = ui_compute(<item w={200}>{"
+                "    Slider({ id: \"line\", name: \"test\", val: val })"
+                "  }</item>);"
+                "  ui_draw(root);"
+                ""
+                "  if(is_mouse_button_pressed(\"left\")){"
+                "    var node = ui_pick(get_mouse_x(), get_mouse_y());"
+                "    if(node==\"line-box\"){"
+                "      pressed = true;"
+                "    }"
+                "  }else if(is_mouse_button_released(\"left\")){"
+                "    pressed = false;"
+                "  }"
+                "  if(pressed){"
+                "    var b = ui_bb(\"line-box\");"
+                "    var local_x = get_mouse_x() - b.x;"
+                "    if (0 > local_x) { local_x = 0; }"
+                "    if (local_x > b.w) { local_x = b.w; }"
+                "    pos = local_x;"
+                "  }"
+                "}"
+            ),
+            .exp=slice_from(""),
+        }
     };
 
     int test_count = sizeof(cases) / sizeof(cases[0]);

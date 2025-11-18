@@ -1,5 +1,9 @@
 #include "segmenter.h"
 
+static inline int is_letter(char code){
+    return (code > 'a' && code < 'z') || (code > 'A' && code < 'Z');
+}
+
 Segment read_JSX(Segmenter* t) {
     int start = t->pos;
     int depth = 0;
@@ -62,12 +66,18 @@ Segment get_next_segment(Segmenter* t) {
         char ch = t->src.start[t->pos];
 
         if (ch == '<') {
-            if (t->pos > start) {
-                Slice content = { t->src.start + start, t->pos - start };
-                return (Segment) { .content = content, .type = JS };
+            char next = 0;
+            if ((t->pos+1) < t->src.len){
+                next = t->src.start[t->pos+1];
             }
+            if (is_letter(next)||next =='>'){
+                if (t->pos > start) {
+                    Slice content = { t->src.start + start, t->pos - start };
+                    return (Segment) { .content = content, .type = JS };
+                }
 
-            return read_JSX(t);
+                return read_JSX(t);
+            }
         }
         t->pos++;
     }

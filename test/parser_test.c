@@ -397,3 +397,53 @@ void test_parser() {
         mt_total++;
     }
 }
+
+void test_parser_no_error_case(const char* input) {
+    Arena arena ={0};
+    arena.allocator.realloc_fn =fn_realloc;
+    Lexer lexer = NewLexer(slice_from(input));
+    Parser parser = (Parser){0};
+    parser.lexer =&lexer;
+    parser.arena=&arena;
+    InitParser(&parser);
+
+    ParseNodeResult result = ParseNode(&parser);
+    if (result.type != OK) {
+        TEST_ERRORF("test_parser_no_error_case","parsing %s failed at %d %s : %.*s got %s\n",
+            input,result.value.err.at,parser_error_to_string(result.value.err.code),
+            5,input+result.value.err.at,token_type_to_string(result.value.err.token)
+        );
+    }
+
+    if(arena.values != NULL){
+        free(arena.values);
+    }
+    if(arena.props != NULL){
+        free(arena.props);
+    }
+
+}
+void test_parser_no_error() {
+    const char* tests[] = {
+        "<rectangle class=\"fit-y grow-x lh p-1 m-1\" color=\"#aa0\">"
+        "    <txt msg={props.name} class=\"grow max-bound-x\" font_size={20} color=\"#000\"></txt>"
+        "    <rectangle id={props.id+\"-box\"} class=\"fit-y grow-x ls\" radius={1} color=\"#00a\">"
+        "      {/* <rectangle x={props.pos} w={20} h={20} radius={1} color=\"#f0a\">*/}"
+        "      <rectangle w={20} h={20} radius={1} color=\"#f0a\">"
+        "      </rectangle>"
+        "    </rectangle>"
+        "    <txt msg={\"\"+props.val} class=\"grow max-bound-x\" font_size={20} color=\"#000\"></txt>"
+        "</rectangle>",
+        "<item w={200}>{"
+        "    // Slider({id:\"line\",name:\"test\",val:val,pos:pos})"
+        "    Slider({ id: \"line\", name: \"test\", val: val })"
+        "  }</item>"
+    };
+
+    int test_count = sizeof(tests) / sizeof(tests[0]);
+    for (int i = 0; i < test_count; i++) {
+        mt_total++;
+        test_parser_no_error_case(tests[i]);
+        mt_total++;
+    }
+}

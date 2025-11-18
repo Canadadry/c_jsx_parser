@@ -64,12 +64,37 @@ Segment get_next_segment(Segmenter* t) {
 
     while (t->pos < t->src.len) {
         char ch = t->src.start[t->pos];
+        char next = 0;
+        if ((t->pos+1) < t->src.len){
+            next = t->src.start[t->pos+1];
+        }
 
-        if (ch == '<') {
+        if(ch == '/' && next == '/'){
+            while(t->pos < t->src.len){
+                char ch = t->src.start[t->pos];
+                if(ch=='\n'){
+                    break;
+                }
+                t->pos++;
+            }
+            continue;
+        }
+
+        if(ch == '/' && next == '*'){
             char next = 0;
             if ((t->pos+1) < t->src.len){
                 next = t->src.start[t->pos+1];
             }
+            while(t->pos < t->src.len){
+                char ch = t->src.start[t->pos];
+                if(ch=='*'&&next=='/'){
+                    break;
+                }
+                t->pos++;
+            }
+        }
+
+        if (ch == '<') {
             if (is_letter(next)||next =='>'){
                 if (t->pos > start) {
                     Slice content = { t->src.start + start, t->pos - start };

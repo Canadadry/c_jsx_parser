@@ -79,7 +79,7 @@ bool jsx_compile(Compiler* c,const char* in,size_t len ){
 
         Segment got = {.type=JS};
         SAFE_WHILE(got.type != END, c->max_iter){
-            Segment got = get_next_segment(&segmenter);
+            got = get_next_segment(&segmenter);
             if (got.type == JS) {
                 write_slice(&c->out, got.content);
             }

@@ -20,11 +20,23 @@ void genNode(Transformer* t,Arena* arena,ValueIndex node_idx){
 
 
     if(node->Props<0){
-        write_string(&t->buf, "null");
-    }else{
-        Prop* p = &arena->props[node->Props];
+        if(isUpper(node->Tag.start[0])){
+            write_string(&t->buf, "{ __cid : \"");
+            write_slice(&t->buf,node->Tag);
+            write_string(&t->buf, "\" }");
+        }else{
+            write_string(&t->buf, "null");
+        }
 
-        write_string(&t->buf, "{ ");
+    }else{
+        if(isUpper(node->Tag.start[0])){
+            write_string(&t->buf, "{ __cid : \"");
+            write_slice(&t->buf,node->Tag);
+            write_string(&t->buf, "\", ");
+        }else{
+            write_string(&t->buf, "{ ");
+        }
+        Prop* p = &arena->props[node->Props];
         write_slice(&t->buf, p->key);
         write_string(&t->buf, " : ");
         if(p->type==EXPR_PROP_TYPE){

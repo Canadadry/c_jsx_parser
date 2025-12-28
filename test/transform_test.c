@@ -71,15 +71,15 @@ void test_transform() {
         },
         {
             .in = "<Button primary>Click</Button>",
-            .exp = "React.createElement(Button, { primary : true }, [\"Click\"])"
+            .exp = "React.createElement(Button, { __cid : \"Button\", primary : true }, [\"Click\"])"
         },
         {
             .in = "<Button></Button>",
-            .exp = "React.createElement(Button, null, [])"
+            .exp = "React.createElement(Button, { __cid : \"Button\" }, [])"
         },
         {
             .in = "<Button>Click</Button>",
-            .exp = "React.createElement(Button, null, [\"Click\"])"
+            .exp = "React.createElement(Button, { __cid : \"Button\" }, [\"Click\"])"
         },
         {
             .in = "<button onClick={handleClick}>press</button>",
